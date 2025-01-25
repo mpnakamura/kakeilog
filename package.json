@@ -6,12 +6,14 @@
     "start": "next start"
   },
   "dependencies": {
+    "@prisma/client": "^6.2.1",
     "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-dropdown-menu": "^2.1.1",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
+    "@types/react-datepicker": "^6.2.0",
     "autoprefixer": "10.4.20",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -19,7 +21,9 @@
     "next": "latest",
     "next-themes": "^0.4.3",
     "prettier": "^3.3.3",
+    "prisma": "^6.2.1",
     "react": "19.0.0",
+    "react-datepicker": "^7.6.0",
     "react-dom": "19.0.0"
   },
   "devDependencies": {
