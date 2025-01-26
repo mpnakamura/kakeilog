@@ -1,20 +1,46 @@
+// components/month-picker.tsx
 "use client";
 
-import { useState } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@radix-ui/react-select";
 
-export default function MonthPicker() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+interface MonthPickerProps {
+  value: string;
+  onChange: (month: string) => void;
+}
+
+export default function MonthPicker({ value, onChange }: MonthPickerProps) {
+  function getMonthOptions() {
+    const options = [];
+    const now = new Date();
+
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const label = `${date.getFullYear()}年${date.getMonth() + 1}月`;
+      options.push({ value, label });
+    }
+
+    return options;
+  }
 
   return (
-    <DatePicker
-      selected={selectedDate}
-      onChange={(date) => setSelectedDate(date || new Date())}
-      dateFormat="yyyy/MM"
-      showMonthYearPicker
-      aria-label="月を選択"
-      className="border rounded px-2 py-1"
-    />
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {getMonthOptions().map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -4,6 +4,8 @@ import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { v4 as uuidv4 } from "uuid";
 
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
@@ -132,3 +134,38 @@ export const signOutAction = async () => {
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
+
+export async function createIncome(formData: FormData) {
+  const supabase = await createClient();
+
+  // ユーザー取得
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  const income = {
+    id: uuidv4(),
+    userId: user.id,
+    title: formData.get("title"),
+    amount: parseInt(formData.get("amount") as string),
+    date: new Date(formData.get("date") as string),
+    category: formData.get("category"),
+    memo: formData.get("memo"),
+  };
+
+  const { data, error } = await supabase
+    .from("income")
+    .insert([income])
+    .select()
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/protected/income");
+  return { data };
+}
