@@ -58,16 +58,8 @@ export default async function AuthButton() {
       </form>
     </div>
   ) : (
-    <div className="flex justify-between w-full">
-      <div className="text-xl font-bold text-blue-600">中村家の家計簿</div>
-      <div className="flex gap-2">
-        <Button asChild size="sm" variant={"outline"}>
-          <Link href="/sign-in">ログイン</Link>
-        </Button>
-        <Button asChild size="sm" variant={"default"}>
-          <Link href="/sign-up">登録</Link>
-        </Button>
-      </div>
+    <div className="flex justify-start w-full">
+      <div className="text-xl font-bold text-blue-600">家計簿アプリ</div>
     </div>
   );
 }

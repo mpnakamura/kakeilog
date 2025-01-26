@@ -25,6 +25,9 @@ export interface Income {
   subCategoryId?: string;
   title: string;
   memo?: string;
+  createdAt: string;    // 追加
+  updatedAt: string;    // 追加
+
 }
 
 export interface Expense {
@@ -36,6 +39,9 @@ export interface Expense {
   subCategoryId?: string;
   title: string;
   memo?: string;
+  createdAt: string;    // 追加
+  updatedAt: string;    // 追加
+
 }
 
 export interface MonthlyData {

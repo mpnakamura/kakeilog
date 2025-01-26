@@ -33,3 +33,30 @@ export function getCurrentYearMonth(): string {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   return `${year}-${month}`;
 }
+
+// lib/utils.ts
+export function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+
+  // 日本の日付フォーマット（年/月/日）
+  return date.toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    // hour: '2-digit',
+    // minute: '2-digit'
+  });
+}
+
+// 時間も含める場合のオプション
+export function formatDateTime(dateString: string): string {
+  const date = new Date(dateString);
+
+  return date.toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

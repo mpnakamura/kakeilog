@@ -19,6 +19,8 @@ export const mockDashboardData: Record<string, MonthlyData> = {
         subCategoryId: "sc1",
         title: "1月給与",
         memo: "基本給",
+        createdAt: "2025-01-01T00:00:00Z", // 追加
+        updatedAt: "2025-01-01T00:00:00Z", // 追加
       },
       {
         id: "i2",
@@ -29,6 +31,8 @@ export const mockDashboardData: Record<string, MonthlyData> = {
         subCategoryId: "sc2",
         title: "副業収入",
         memo: "フリーランス案件",
+        createdAt: "2025-01-10T00:00:00Z", // 追加
+        updatedAt: "2025-01-10T00:00:00Z", // 追加
       },
     ],
     expenses: [
@@ -41,6 +45,8 @@ export const mockDashboardData: Record<string, MonthlyData> = {
         subCategoryId: "sc3",
         title: "家賃",
         memo: "1月分家賃",
+        createdAt: "2025-01-15T00:00:00Z", // 追加
+        updatedAt: "2025-01-15T00:00:00Z", // 追加
       },
       {
         id: "e2",
@@ -51,6 +57,8 @@ export const mockDashboardData: Record<string, MonthlyData> = {
         subCategoryId: "sc4",
         title: "電気代",
         memo: "東京電力",
+        createdAt: "2025-01-20T00:00:00Z", // 追加
+        updatedAt: "2025-01-20T00:00:00Z", // 追加
       },
     ],
     categoryBreakdown: {

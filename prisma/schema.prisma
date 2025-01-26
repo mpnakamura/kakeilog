@@ -8,85 +8,72 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
+  id            String        @id
   name          String?
-  email         String?   @unique
+  email         String?       @unique
   emailVerified DateTime?
   image         String?
-  accounts      Account[]
-  sessions      Session[]
   incomes       Income[]
-  expenses      Expense[] // 支出を追加
-}
-
-model Account {
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@id([provider, providerAccountId])
-}
-
-model Session {
-  sessionToken String   @id
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Income {
-  id            String   @id @default(uuid())
-  userId        String
-  amount        Int
-  date          DateTime
-  categoryId    String
-  subCategoryId String?
-  title         String
-  memo          String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id])
-  category      Category @relation(fields: [categoryId], references: [id])
-  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
-}
-
-model Expense {
-  id            String   @id @default(uuid())
-  userId        String
-  amount        Int
-  date          DateTime
-  categoryId    String
-  subCategoryId String?
-  title         String
-  memo          String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id])
-  category      Category @relation(fields: [categoryId], references: [id])
-  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
+  expenses      Expense[]
+  // ★ Category は全ユーザー共通のためリレーションを持たず
+  //    SubCategory だけ紐付ける
+  subCategories SubCategory[]
 }
 
 model Category {
   id            String        @id @default(uuid())
-  name          String
+  name          String        @unique
+  type          String?
+  // ★ Category はユーザー固有の情報を持たず、全体で1つだけ
   subCategories SubCategory[]
-  incomes       Income[]      
-  expenses      Expense[]     
+  incomes       Income[]
+  expenses      Expense[]
 }
 
 model SubCategory {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   name       String
+  // ★ SubCategory はユーザー固有
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  // ★ どの親カテゴリに属するか
   categoryId String
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  incomes    Income[]  
-  expenses   Expense[] 
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  incomes    Income[]
+  expenses   Expense[]
+
+  // ユーザー＆カテゴリごとにサブカテゴリ名をユニークにしたい場合
+  @@unique([userId, categoryId, name])
+}
+
+model Income {
+  id            String       @id @default(uuid())
+  userId        String
+  amount        Int
+  date          DateTime
+  categoryId    String
+  subCategoryId String?
+  title         String
+  memo          String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  user          User         @relation(fields: [userId], references: [id])
+  category      Category     @relation(fields: [categoryId], references: [id])
+  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
+}
+
+model Expense {
+  id            String       @id @default(uuid())
+  userId        String
+  amount        Int
+  date          DateTime
+  categoryId    String
+  subCategoryId String?
+  title         String
+  memo          String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  user          User         @relation(fields: [userId], references: [id])
+  category      Category     @relation(fields: [categoryId], references: [id])
+  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
 }

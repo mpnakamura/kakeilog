@@ -21,7 +21,8 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  const { error } = await supabase.auth.signUp({
+  // 認証ユーザーを作成
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -29,16 +30,42 @@ export const signUpAction = async (formData: FormData) => {
     },
   });
 
-  if (error) {
-    console.error(error.code + " " + error.message);
-    return encodedRedirect("error", "/sign-up", error.message);
-  } else {
-    return encodedRedirect(
-      "success",
-      "/sign-up",
-      "Thanks for signing up! Please check your email for a verification link."
-    );
+  if (authError) {
+    console.error("Auth Error:", authError.code, authError.message);
+    return encodedRedirect("error", "/sign-up", authError.message);
   }
+
+  if (authData.user) {
+    console.log("Auth User Created:", authData.user.id);
+
+    // Userテーブルにレコードを作成
+    const { data: userData, error: userError } = await supabase
+      .from("User")
+      .insert([
+        {
+          id: authData.user.id,
+          email: authData.user.email,
+          name: null,
+          emailVerified: null,
+          image: null,
+        },
+      ])
+      .select()
+      .single();
+
+    if (userError) {
+      console.error("User Insert Error:", userError);
+      return encodedRedirect("error", "/sign-up", "ユーザー登録に失敗しました");
+    }
+
+    console.log("User Record Created:", userData);
+  }
+
+  return encodedRedirect(
+    "success",
+    "/sign-up",
+    "アカウントを作成しました。メールの確認をお願いします。"
+  );
 };
 
 export const signInAction = async (formData: FormData) => {
@@ -46,13 +73,44 @@ export const signInAction = async (formData: FormData) => {
   const password = formData.get("password") as string;
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: authData, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
     return encodedRedirect("error", "/sign-in", error.message);
+  }
+
+  if (authData.user) {
+    // Userテーブルにレコードが存在するか確認
+    const { data: existingUser, error: checkError } = await supabase
+      .from("User")
+      .select()
+      .eq("id", authData.user.id)
+      .single();
+
+    if (checkError || !existingUser) {
+      // ユーザーレコードが存在しない場合は作成
+      const { error: createError } = await supabase.from("User").insert([
+        {
+          id: authData.user.id,
+          email: authData.user.email,
+          name: null,
+          emailVerified: authData.user.email_confirmed_at,
+          image: null,
+        },
+      ]);
+
+      if (createError) {
+        console.error("User creation error:", createError);
+        return encodedRedirect(
+          "error",
+          "/sign-in",
+          "ユーザー情報の作成に失敗しました"
+        );
+      }
+    }
   }
 
   return redirect("/dashboard");
@@ -146,14 +204,28 @@ export async function createIncome(formData: FormData) {
     return { error: "認証されていません" };
   }
 
+  // FormDataからの値を型安全に取得
+  const rawAmount = formData.get("amount");
+  const rawDate = formData.get("date");
+  const rawTitle = formData.get("title");
+  const rawCategoryId = formData.get("category");
+
+  // バリデーション
+  if (!rawTitle || !rawAmount || !rawDate || !rawCategoryId) {
+    return { error: "必須項目が入力されていません" };
+  }
+
   const income = {
     id: uuidv4(),
     userId: user.id,
-    title: formData.get("title"),
-    amount: parseInt(formData.get("amount") as string),
-    date: new Date(formData.get("date") as string),
-    category: formData.get("category"),
-    memo: formData.get("memo"),
+    title: rawTitle as string,
+    amount: parseInt(rawAmount as string),
+    date: new Date(rawDate as string).toISOString(),
+    categoryId: rawCategoryId as string,
+    subCategoryId: (formData.get("subCategory") as string) || null,
+    memo: (formData.get("memo") as string) || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
   const { data, error } = await supabase
@@ -167,5 +239,97 @@ export async function createIncome(formData: FormData) {
   }
 
   revalidatePath("/protected/income");
+  return { data };
+}
+
+
+// app/actions.ts
+export async function getRecentExpenses() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  const { data, error } = await supabase
+    .from("Expense")
+    .select("*")
+    .eq("userId", user.id)
+    .order("date", { ascending: false })
+    .limit(50); // 最近の50件を取得
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { data };
+}
+
+export async function createExpense(formData: FormData) {
+  const supabase = await createClient();
+
+  // ユーザー取得
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    console.error("認証されていません");
+    return { error: "認証されていません" };
+  }
+
+  // ユーザーがデータベースに存在するか確認
+  const { data: dbUser, error: userError } = await supabase
+    .from("User")
+    .select("id")
+    .eq("id", user.id)
+    .single();
+
+  if (userError || !dbUser) {
+    console.error("ユーザーが見つかりません");
+    return { error: "ユーザーが見つかりません" };
+  }
+
+  // FormDataからの値を型安全に取得
+  const rawAmount = formData.get("amount");
+  const rawDate = formData.get("date");
+  const rawTitle = formData.get("title");
+  const rawCategoryId = formData.get("category");
+
+  // バリデーション
+  if (!rawTitle || !rawAmount || !rawDate || !rawCategoryId) {
+    console.error("必須項目が入力されていません");
+    return { error: "必須項目が入力されていません" };
+  }
+
+  const expense = {
+    id: uuidv4(),
+    userId: user.id,
+    title: rawTitle as string,
+    amount: parseInt(rawAmount as string),
+    date: new Date(rawDate as string).toISOString(),
+    categoryId: rawCategoryId as string,
+    subCategoryId: (formData.get("subCategory") as string) || null,
+    memo: (formData.get("memo") as string) || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("Expense")
+    .insert([expense])
+    .select()
+    .single();
+
+  if (error) {
+    console.error(error.message);
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/expense");
+
   return { data };
 }

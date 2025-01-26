@@ -62,7 +62,7 @@ export default async function RootLayout({
               z-10 は重なり順制御用
               bg-background は下のコンテンツが透けないように背景をつける
             */}
-            <nav className="sticky top-0 z-10 bg-background border-b border-b-foreground/10 h-16 p-4 flex justify-end shrink-0">
+            <nav className="sticky top-0 z-10 bg-background h-16 p-4 flex justify-end shrink-0">
               {!hasEnvVars ? <EnvVarWarning /> : <HeaderAuth />}
             </nav>
 

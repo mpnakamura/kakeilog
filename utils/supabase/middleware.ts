@@ -34,12 +34,18 @@ export const updateSession = async (request: NextRequest) => {
 
     const user = await supabase.auth.getUser();
 
-    // not logged in -> redirect to sign-in
-    if (!request.nextUrl.pathname.startsWith("/sign-in") && user.error) {
+    // パブリックルートの定義
+    const publicRoutes = ["/sign-in", "/sign-up", "/forgot-password"];
+    const isPublicRoute = publicRoutes.some((route) =>
+      request.nextUrl.pathname.startsWith(route)
+    );
+
+    // 非認証ユーザーはパブリックルート以外にアクセスできない
+    if (!isPublicRoute && user.error) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
-    // logged in -> redirect to dashboard
+    // 認証済みユーザーがルートにアクセスした場合はダッシュボードへ
     if (request.nextUrl.pathname === "/" && !user.error) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }

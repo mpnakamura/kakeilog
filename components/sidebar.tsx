@@ -13,7 +13,7 @@ export default function Sidebar({ className }: SidebarProps) {
 
   const menuItems = [
     { href: "/dashboard", label: "ダッシュボード", icon: Home },
-    { href: "/dashboard/expenditure", label: "支出登録", icon: Banknote },
+    { href: "/dashboard/expence", label: "支出登録", icon: Banknote },
     { href: "/dashboard/income", label: "収入登録", icon: Wallet },
     {
       href: "/dashboard/reset-password",
