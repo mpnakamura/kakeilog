@@ -9,7 +9,6 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
-// モジュールスコープでGeistを呼び出す
 const geistSans = Geist({
   display: "swap",
   subsets: ["latin"],
@@ -40,16 +39,40 @@ export default async function RootLayout({
   return (
     <html lang="jp" className={geistSans.className} suppressHydrationWarning>
       <body className="bg-background text-foreground">
-        <div className="flex min-h-screen">
-          {user && <Sidebar className="w-64" />}
-          <div className="flex-1 flex flex-col">
-            <nav className="w-full flex justify-end border-b border-b-foreground/10 h-16 p-4">
+        {/* 
+          画面全体 (親要素) の設定
+          h-screen: ブラウザの高さを100%使用
+          overflow-hidden: 子要素側でオーバーフローを制御するため
+        */}
+        <div className="flex h-screen overflow-hidden">
+          {/* サイドバー（ユーザーがログインしていれば表示） */}
+          {user && (
+            <div
+              className="w-64 shrink-0 h-full overflow-y-auto
+                         border-r border-r-foreground/10"
+            >
+              <Sidebar />
+            </div>
+          )}
+
+          {/* メインコンテンツ用のラッパ */}
+          <div className="flex-1 flex flex-col h-full overflow-hidden">
+            {/* 
+              ヘッダーを固定表示にする: sticky top-0 
+              z-10 は重なり順制御用
+              bg-background は下のコンテンツが透けないように背景をつける
+            */}
+            <nav className="sticky top-0 z-10 bg-background border-b border-b-foreground/10 h-16 p-4 flex justify-end shrink-0">
               {!hasEnvVars ? <EnvVarWarning /> : <HeaderAuth />}
             </nav>
-            <main className={`flex-1 p-6 ${!user && "flex justify-center"}`}>
-              {children}
-              <Toaster />
-            </main>
+
+            {/* スクロールが起こるメイン領域 */}
+            <div className="flex-1 overflow-y-auto">
+              <main className={`p-10 ${!user && "flex justify-center"}`}>
+                {children}
+                <Toaster />
+              </main>
+            </div>
           </div>
         </div>
       </body>

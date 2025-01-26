@@ -26,7 +26,7 @@ export default function Sidebar({ className }: SidebarProps) {
 
   return (
     <aside
-      className={`${className} bg-white shadow-lg border-r border-gray-200`}
+      className={`${className} bg-white h-screen border-r border-gray-200`}
     >
       <div className="flex items-center justify-center h-16 border-b bg-white">
         <h1 className="text-blue-600 text-xl font-semibold">家計簿</h1>
