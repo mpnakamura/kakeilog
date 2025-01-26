@@ -21,8 +21,7 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  // 認証ユーザーを作成
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  const { error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -31,34 +30,7 @@ export const signUpAction = async (formData: FormData) => {
   });
 
   if (authError) {
-    console.error("Auth Error:", authError.code, authError.message);
     return encodedRedirect("error", "/sign-up", authError.message);
-  }
-
-  if (authData.user) {
-    console.log("Auth User Created:", authData.user.id);
-
-    // Userテーブルにレコードを作成
-    const { data: userData, error: userError } = await supabase
-      .from("User")
-      .insert([
-        {
-          id: authData.user.id,
-          email: authData.user.email,
-          name: null,
-          emailVerified: null,
-          image: null,
-        },
-      ])
-      .select()
-      .single();
-
-    if (userError) {
-      console.error("User Insert Error:", userError);
-      return encodedRedirect("error", "/sign-up", "ユーザー登録に失敗しました");
-    }
-
-    console.log("User Record Created:", userData);
   }
 
   return encodedRedirect(
@@ -241,7 +213,6 @@ export async function createIncome(formData: FormData) {
   revalidatePath("/protected/income");
   return { data };
 }
-
 
 // app/actions.ts
 export async function getRecentExpenses() {

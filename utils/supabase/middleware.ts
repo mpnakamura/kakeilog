@@ -32,29 +32,49 @@ export const updateSession = async (request: NextRequest) => {
       }
     );
 
-    // 現在のユーザー情報を取得
-    const user = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     // パブリックルートの定義
-    // ここに /auth/callback や /auth/google/callback を加える
     const publicRoutes = [
       "/sign-in",
       "/sign-up",
       "/forgot-password",
-      "/auth/callback/*", // ← ここを追加
+      "/auth/callback",
+      "/auth/callback/",
+      "/auth/setup",
     ];
 
-    const isPublicRoute = publicRoutes.some((route) =>
-      request.nextUrl.pathname.startsWith(route)
-    );
+    const path = request.nextUrl.pathname;
+    const isPublicRoute = publicRoutes.some((route) => path.startsWith(route));
+
+    // setupページの制御
+    if (user) {
+      const { data: userData } = await supabase
+        .from("User")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+
+      const isSetupComplete = !!userData?.name;
+
+      if (path === "/auth/setup" && isSetupComplete) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+
+      if (path === "/dashboard" && !isSetupComplete) {
+        return NextResponse.redirect(new URL("/auth/setup", request.url));
+      }
+    }
 
     // 非認証ユーザーはパブリックルート以外にアクセスできない
-    if (!isPublicRoute && user.error) {
+    if (!isPublicRoute && !user) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
-    // 認証済みユーザーがルート"/"にアクセスした場合はダッシュボードへ
-    if (request.nextUrl.pathname === "/" && !user.error) {
+    // 認証済みユーザーがルートにアクセスした場合はダッシュボードへ
+    if (path === "/" && user) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
