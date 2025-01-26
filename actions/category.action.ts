@@ -12,6 +12,7 @@ export async function getCategories(type: "income" | "expense") {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
+    console.error("ユーザーが認証されていません");
     return { error: "認証されていません" };
   }
 
@@ -22,6 +23,7 @@ export async function getCategories(type: "income" | "expense") {
     .eq("type", type);
 
   if (error) {
+    console.error("カテゴリ取得エラー:", error.message);
     return { error: error.message };
   }
 
@@ -33,6 +35,7 @@ export async function getCategories(type: "income" | "expense") {
         cat.subCategories?.filter((sub) => sub.userId === user.id) || [],
     })) || [];
 
+  console.log("フィルタリングされたカテゴリ:", filtered);
   return { data: filtered };
 }
 
@@ -44,6 +47,7 @@ export async function addSubCategory(categoryId: string, name: string) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
+    console.error("ユーザーが認証されていません");
     return { error: "認証されていません" };
   }
 
@@ -61,9 +65,11 @@ export async function addSubCategory(categoryId: string, name: string) {
     .single();
 
   if (error) {
+    console.error("サブカテゴリ追加エラー:", error.message);
     return { error: error.message };
   }
 
+  console.log("追加されたサブカテゴリ:", data);
   revalidatePath("/dashboard/income");
   revalidatePath("/dashboard/expense");
   return { data };

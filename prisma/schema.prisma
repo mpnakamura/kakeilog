@@ -15,8 +15,6 @@ model User {
   image         String?
   incomes       Income[]
   expenses      Expense[]
-  // ★ Category は全ユーザー共通のためリレーションを持たず
-  //    SubCategory だけ紐付ける
   subCategories SubCategory[]
 }
 
@@ -24,7 +22,6 @@ model Category {
   id            String        @id @default(uuid())
   name          String        @unique
   type          String?
-  // ★ Category はユーザー固有の情報を持たず、全体で1つだけ
   subCategories SubCategory[]
   incomes       Income[]
   expenses      Expense[]
@@ -36,13 +33,11 @@ model SubCategory {
   // ★ SubCategory はユーザー固有
   userId     String
   user       User      @relation(fields: [userId], references: [id])
-  // ★ どの親カテゴリに属するか
   categoryId String
   category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   incomes    Income[]
   expenses   Expense[]
 
-  // ユーザー＆カテゴリごとにサブカテゴリ名をユニークにしたい場合
   @@unique([userId, categoryId, name])
 }
 
