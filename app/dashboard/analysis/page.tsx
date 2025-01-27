@@ -111,11 +111,7 @@ export default function AnalysisPage() {
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8 text-gray-800">
         家計簿分析レポート
-        <span className="text-sm ml-2 font-normal text-gray-500">
-          （最低2ヶ月分のデータが必要）
-        </span>
       </h1>
-      <AnalysisHistory />
 
       {!analysisData && !loading && (
         <div className="text-center py-12 space-y-4">
@@ -238,6 +234,9 @@ export default function AnalysisPage() {
           </div>
         </div>
       )}
+      <div className="mt-6">
+        <AnalysisHistory />
+      </div>
     </div>
   );
 }

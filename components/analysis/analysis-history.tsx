@@ -1,4 +1,3 @@
-// components/analysis/analysis-history.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,35 +11,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, Loader2 } from "lucide-react";
 
 interface AnalysisHistoryItem {
   id: string;
   analysisDate: string;
-  insights: {
-    trends: string[];
-    comparisons: {
-      income: { current: number; previous: number; diff: number };
-      expense: { current: number; previous: number; diff: number };
-    };
-    suggestions: { title: string; content: string }[];
-  };
+  insights: any;
 }
 
 export default function AnalysisHistory() {
   const [history, setHistory] = useState<AnalysisHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] =
     useState<AnalysisHistoryItem | null>(null);
   const supabase = createClient();
@@ -73,8 +66,32 @@ export default function AnalysisHistory() {
     fetchHistory();
   }, []);
 
-  if (loading) return <div>読み込み中...</div>;
-  if (error) return <div>エラー: {error}</div>;
+  const handleDetailClick = (item: AnalysisHistoryItem) => {
+    setSelectedAnalysis(item);
+    setDialogOpen(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 text-red-700 rounded-lg">
+        エラー: {error}
+      </div>
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <div className="text-center p-8 text-gray-500">分析履歴がありません</div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -90,99 +107,223 @@ export default function AnalysisHistory() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {history.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>
-                {format(new Date(item.analysisDate), "yyyy年MM月dd日", {
-                  locale: ja,
-                })}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center space-x-1">
-                  {item.insights.comparisons.income.diff > 0 ? (
-                    <ArrowUpIcon className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <ArrowDownIcon className="w-4 h-4 text-red-500" />
+          {history.map((item) => {
+            const insights = item.insights;
+            const trends = Array.isArray(insights?.trends)
+              ? insights.trends
+              : [];
+            const comparisons = insights?.comparisons || {};
+            const suggestions = Array.isArray(insights?.suggestions)
+              ? insights.suggestions
+              : [];
+
+            return (
+              <TableRow key={item.id}>
+                <TableCell>
+                  {format(new Date(item.analysisDate), "yyyy年MM月dd日", {
+                    locale: ja,
+                  })}
+                </TableCell>
+                <TableCell>
+                  {comparisons.income && (
+                    <div className="flex items-center space-x-1">
+                      {comparisons.income.diff > 0 ? (
+                        <ArrowUpIcon className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <ArrowDownIcon className="w-4 h-4 text-red-500" />
+                      )}
+                      <span>{Math.abs(comparisons.income.diff)}%</span>
+                    </div>
                   )}
-                  <span>
-                    {Math.abs(item.insights.comparisons.income.diff)}%
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center space-x-1">
-                  {item.insights.comparisons.expense.diff > 0 ? (
-                    <ArrowUpIcon className="w-4 h-4 text-red-500" />
-                  ) : (
-                    <ArrowDownIcon className="w-4 h-4 text-green-500" />
+                </TableCell>
+                <TableCell>
+                  {comparisons.expense && (
+                    <div className="flex items-center space-x-1">
+                      {comparisons.expense.diff > 0 ? (
+                        <ArrowUpIcon className="w-4 h-4 text-red-500" />
+                      ) : (
+                        <ArrowDownIcon className="w-4 h-4 text-green-500" />
+                      )}
+                      <span>{Math.abs(comparisons.expense.diff)}%</span>
+                    </div>
                   )}
-                  <span>
-                    {Math.abs(item.insights.comparisons.expense.diff)}%
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell className="max-w-xs truncate">
-                {item.insights.trends[0]}
-              </TableCell>
-              <TableCell>
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedAnalysis(item)}
-                    >
-                      詳細を見る
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent>
-                    <SheetHeader>
-                      <SheetTitle>
-                        {format(
-                          new Date(item.analysisDate),
-                          "yyyy年MM月の分析",
-                          { locale: ja }
-                        )}
-                      </SheetTitle>
-                      <SheetDescription>
-                        分析日:{" "}
-                        {format(new Date(item.analysisDate), "yyyy年MM月dd日", {
-                          locale: ja,
-                        })}
-                      </SheetDescription>
-                    </SheetHeader>
-                    <div className="mt-6 space-y-6">
-                      <div>
-                        <h3 className="font-medium mb-2">トレンド</h3>
-                        <ul className="list-disc pl-4 space-y-2">
-                          {item.insights.trends.map((trend, i) => (
-                            <li key={i}>{trend}</li>
-                          ))}
-                        </ul>
+                </TableCell>
+                <TableCell className="max-w-xs truncate">
+                  {trends[0] || "分析なし"}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDetailClick(item)}
+                  >
+                    詳細を見る
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          {selectedAnalysis && (
+            <div className="relative h-full">
+              <DialogHeader className="bg-background pr-6">
+                <DialogTitle className="text-2xl">
+                  {format(
+                    new Date(selectedAnalysis.analysisDate),
+                    "yyyy年MM月の分析",
+                    {
+                      locale: ja,
+                    }
+                  )}
+                </DialogTitle>
+                <DialogDescription className="text-gray-500">
+                  分析実施日:{" "}
+                  {format(
+                    new Date(selectedAnalysis.analysisDate),
+                    "yyyy年MM月dd日",
+                    {
+                      locale: ja,
+                    }
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-6">
+                <div className="divide-y divide-gray-100">
+                  {/* 収支の比較セクション */}
+                  <div className="pb-6">
+                    <h3 className="text-sm font-medium text-gray-500 mb-4">
+                      前月比較
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-blue-700 font-medium">
+                            収入
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {selectedAnalysis.insights.comparisons.income.diff >
+                            0 ? (
+                              <ArrowUpIcon className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <ArrowDownIcon className="w-4 h-4 text-red-500" />
+                            )}
+                            <span className="font-medium">
+                              {Math.abs(
+                                selectedAnalysis.insights.comparisons.income
+                                  .diff
+                              )}
+                              %
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row justify-between text-sm text-gray-600 gap-1">
+                          <span>
+                            今月:{" "}
+                            {selectedAnalysis.insights.comparisons.income.current.toLocaleString()}
+                            円
+                          </span>
+                          <span>
+                            前月:{" "}
+                            {selectedAnalysis.insights.comparisons.income.previous.toLocaleString()}
+                            円
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-medium mb-2">提案</h3>
-                        <div className="space-y-4">
-                          {item.insights.suggestions.map((suggestion, i) => (
-                            <div key={i} className="bg-gray-50 p-4 rounded-lg">
-                              <h4 className="font-medium text-gray-900">
-                                {suggestion.title}
-                              </h4>
-                              <p className="text-gray-600 mt-1">
-                                {suggestion.content}
-                              </p>
-                            </div>
-                          ))}
+                      <div className="bg-purple-50 p-4 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-purple-700 font-medium">
+                            支出
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {selectedAnalysis.insights.comparisons.expense
+                              .diff > 0 ? (
+                              <ArrowUpIcon className="w-4 h-4 text-red-500" />
+                            ) : (
+                              <ArrowDownIcon className="w-4 h-4 text-green-500" />
+                            )}
+                            <span className="font-medium">
+                              {Math.abs(
+                                selectedAnalysis.insights.comparisons.expense
+                                  .diff
+                              )}
+                              %
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row justify-between text-sm text-gray-600 gap-1">
+                          <span>
+                            今月:{" "}
+                            {selectedAnalysis.insights.comparisons.expense.current.toLocaleString()}
+                            円
+                          </span>
+                          <span>
+                            前月:{" "}
+                            {selectedAnalysis.insights.comparisons.expense.previous.toLocaleString()}
+                            円
+                          </span>
                         </div>
                       </div>
                     </div>
-                  </SheetContent>
-                </Sheet>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                  </div>
+
+                  {/* トレンドセクション */}
+                  <div className="py-6">
+                    <h3 className="text-sm font-medium text-gray-500 mb-4">
+                      主要トレンド
+                    </h3>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <ul className="space-y-3">
+                        {Array.isArray(selectedAnalysis.insights?.trends) &&
+                          selectedAnalysis.insights.trends.map((trend, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
+                                {i + 1}
+                              </span>
+                              <span className="text-gray-700">{trend}</span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* 提案セクション */}
+                  <div className="pt-6">
+                    <h3 className="text-sm font-medium text-gray-500 mb-4">
+                      改善提案
+                    </h3>
+                    <div className="space-y-4">
+                      {Array.isArray(selectedAnalysis.insights?.suggestions) &&
+                        selectedAnalysis.insights.suggestions.map(
+                          (suggestion: any, i) => (
+                            <div
+                              key={i}
+                              className="bg-green-50 p-4 rounded-lg border border-green-100"
+                            >
+                              <h4 className="text-green-700 font-medium mb-2">
+                                {typeof suggestion === "object"
+                                  ? suggestion.title
+                                  : "提案"}
+                              </h4>
+                              <p className="text-gray-600">
+                                {typeof suggestion === "object"
+                                  ? suggestion.content
+                                  : suggestion}
+                              </p>
+                            </div>
+                          )
+                        )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
