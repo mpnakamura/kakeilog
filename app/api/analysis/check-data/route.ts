@@ -7,21 +7,36 @@ export async function POST(req: Request) {
   try {
     const { userId } = await req.json();
 
-    const { data } = await supabase
-      .from("Income")
-      .select("date")
-      .or(`userId.eq.${userId},userId.eq.${userId}`)
-      .order("date", { ascending: true });
+    // 収入と支出のデータを取得
+    const [{ data: incomes }, { data: expenses }] = await Promise.all([
+      supabase.from("Income").select("date").eq("userId", userId),
+      supabase.from("Expense").select("date").eq("userId", userId),
+    ]);
 
-    const uniqueMonths = new Set(
-      data?.map((item) => new Date(item.date).toISOString().slice(0, 7))
-    ).size;
+    // 月ごとにグループ化（収入と支出を合わせて）
+    const allMonths = new Set([
+      ...(incomes || []).map((item) =>
+        new Date(item.date).toISOString().slice(0, 7)
+      ),
+      ...(expenses || []).map((item) =>
+        new Date(item.date).toISOString().slice(0, 7)
+      ),
+    ]);
 
+    const monthsCount = allMonths.size;
+
+    // デバッグ情報も含めて返す
     return NextResponse.json({
-      hasEnough: uniqueMonths >= 2,
-      months: uniqueMonths,
+      hasEnough: monthsCount >= 2,
+      months: monthsCount,
+      debug: {
+        uniqueMonths: Array.from(allMonths),
+        incomeCount: incomes?.length || 0,
+        expenseCount: expenses?.length || 0,
+      },
     });
   } catch (error) {
+    console.error("Data check error:", error);
     return NextResponse.json(
       { error: "データチェックに失敗しました" },
       { status: 500 }

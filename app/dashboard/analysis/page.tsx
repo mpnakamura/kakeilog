@@ -10,12 +10,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
+import { createClient } from "@/utils/supabase/client";
 import { AnalysisResult } from "@/types/analysis";
 import AnalysisSummary from "@/components/analysis/analysis-summary";
 import ComparisonChart from "@/components/analysis/comparison-chart";
 import SuggestionsList from "@/components/analysis/suggestions-list";
 import Link from "next/link";
+import AnalysisHistory from "@/components/analysis/analysis-history";
 
 interface DataStatus {
   hasEnoughData: boolean;
@@ -30,13 +31,36 @@ export default function AnalysisPage() {
     monthsCount: 0,
   });
   const [error, setError] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const supabase = createClient();
+
+  // ユーザーID取得
+  useEffect(() => {
+    async function getUserId() {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+      if (error) {
+        console.error("Error fetching user:", error);
+        setError("ユーザー情報の取得に失敗しました");
+        return;
+      }
+      if (user) {
+        setUserId(user.id);
+      }
+    }
+    getUserId();
+  }, []);
 
   const checkDataStatus = async () => {
+    if (!userId) return;
+
     try {
       const response = await fetch("/api/analysis/check-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: "current_user_id" }),
+        body: JSON.stringify({ userId }),
       });
 
       if (!response.ok) throw new Error("データ確認に失敗しました");
@@ -52,12 +76,15 @@ export default function AnalysisPage() {
     }
   };
 
+  // userIdが取得できたらデータ状態をチェック
   useEffect(() => {
-    checkDataStatus();
-  }, []);
+    if (userId) {
+      checkDataStatus();
+    }
+  }, [userId]);
 
   const fetchAnalysis = async () => {
-    if (!dataStatus.hasEnoughData) return;
+    if (!userId || !dataStatus.hasEnoughData) return;
 
     setLoading(true);
     setError("");
@@ -65,7 +92,7 @@ export default function AnalysisPage() {
       const response = await fetch("/api/analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: "current_user_id" }),
+        body: JSON.stringify({ userId }),
       });
 
       if (!response.ok) throw new Error("分析に失敗しました");
@@ -88,6 +115,7 @@ export default function AnalysisPage() {
           （最低2ヶ月分のデータが必要）
         </span>
       </h1>
+      <AnalysisHistory />
 
       {!analysisData && !loading && (
         <div className="text-center py-12 space-y-4">
@@ -136,20 +164,28 @@ export default function AnalysisPage() {
             )}
           </Button>
 
+          {/* AnalysisPage.tsxの該当部分の修正 */}
           {!dataStatus.hasEnoughData && (
-            <div className="my-4 p-3  rounded-lg text-gray-700">
-              <p className="text-sm">
-                ※ 分析可能なデータが不足しています（現在{" "}
-                {dataStatus.monthsCount}ヶ月分）
+            <div className="my-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-gray-700">
+              <p className="text-sm font-medium mb-2">
+                分析には最低2ヶ月分のデータが必要です
               </p>
-              <div className="flex flex-row gap-6 my-6 justify-center">
+              <p className="text-sm mb-4">
+                現在の登録状況: {dataStatus.monthsCount}ヶ月分
+                {dataStatus.monthsCount === 0
+                  ? "（データがありません）"
+                  : dataStatus.monthsCount === 1
+                    ? "（あと1ヶ月分必要です）"
+                    : ""}
+              </p>
+              <div className="flex flex-row gap-6 justify-center">
                 <Button
                   asChild
                   variant="outline"
                   className="text-gray-700 border-gray-300 hover:bg-gray-200 hover:text-gray-800"
                 >
                   <Link href="/dashboard/income" className="text-sm">
-                    収入登録
+                    収入を登録
                   </Link>
                 </Button>
                 <Button
@@ -158,7 +194,7 @@ export default function AnalysisPage() {
                   className="text-gray-700 border-gray-300 hover:bg-gray-200 hover:text-gray-800"
                 >
                   <Link href="/dashboard/expense" className="text-sm">
-                    支出登録
+                    支出を登録
                   </Link>
                 </Button>
               </div>

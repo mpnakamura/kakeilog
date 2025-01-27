@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { format, subMonths } from "date-fns";
 import { Expense, Income } from "@/types/dashboard";
 import { createClient } from "@/utils/supabase/server";
+import { v4 as uuidv4 } from "uuid";
+import { AnalysisResult } from "@/types/analysis";
 
 // 型定義
 type ProcessedData = {
@@ -10,15 +12,6 @@ type ProcessedData = {
   income: number;
   expense: number;
   balance: number;
-};
-
-type AnalysisResult = {
-  trends: string[];
-  comparisons: {
-    income: { current: number; previous: number; diff: number };
-    expense: { current: number; previous: number; diff: number };
-  };
-  suggestions: string[];
 };
 
 // Supabaseクライアント初期化
@@ -81,7 +74,6 @@ const preprocessData = (
     }));
 };
 
-// AI分析関数
 const fetchAIAnalysis = async (
   data: ProcessedData[]
 ): Promise<AnalysisResult> => {
@@ -95,8 +87,49 @@ const fetchAIAnalysis = async (
     messages: [
       {
         role: "system",
-        content:
-          "家計簿データを分析し、以下のJSON形式で回答してください。数値は全て円単位、差分は百分率で計算してください。",
+        content: `家計簿データを分析し、以下の形式のJSONで回答してください:
+{
+  "trends": [
+    "収支に関する主要なトレンドを説明する文章",
+    "2つ目のトレンド（オプション）",
+    "3つ目のトレンド（オプション）"
+  ],
+  "comparisons": {
+    "income": {
+      "current": 現在月の収入額（数値）,
+      "previous": 前月の収入額（数値）,
+      "diff": 前月比の変化率（パーセント、小数点以下1桁）
+    },
+    "expense": {
+      "current": 現在月の支出額（数値）,
+      "previous": 前月の支出額（数値）,
+      "diff": 前月比の変化率（パーセント、小数点以下1桁）
+    }
+  },
+  "suggestions": [
+    {
+      "title": "提案1のタイトル（例：支出の見直し）",
+      "content": "提案1の具体的な内容と理由（例：先月と比べて食費が20%増加しています...）"
+    },
+    {
+      "title": "提案2のタイトル",
+      "content": "提案2の具体的な内容"
+    },
+    {
+      "title": "提案3のタイトル",
+      "content": "提案3の具体的な内容"
+    }
+  ]
+}
+
+要件：
+- 数値は全て円単位で表示
+- 変化率は百分率で小数点以下1桁まで計算
+- trendsには必ず1つ以上の文章を含める
+- suggestionsは必ずtitleとcontentのペアで提供
+- titleは簡潔に（30文字以内）
+- contentには具体的な説明や数値を含める
+- 分析は日本語で提供`,
       },
       {
         role: "user",
@@ -108,22 +141,81 @@ const fetchAIAnalysis = async (
     response_format: { type: "json_object" },
   };
 
-  const response = await fetch(process.env.DEEPSEEK_API_URL!, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-    },
-    body: JSON.stringify(prompt),
-  });
+  try {
+    const response = await fetch(process.env.DEEPSEEK_API_URL!, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify(prompt),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`DeepSeek API Error: ${error.message}`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`DeepSeek API Error: ${error.message}`);
+    }
+
+    const result = await response.json();
+    const analysisResult = JSON.parse(result.choices[0].message.content);
+
+    // レスポンスの検証と必要に応じた補完
+    const validatedResult: AnalysisResult = {
+      trends: Array.isArray(analysisResult.trends)
+        ? analysisResult.trends
+        : ["データ分析中"],
+      comparisons: {
+        income: {
+          current: Number(analysisResult.comparisons?.income?.current) || 0,
+          previous: Number(analysisResult.comparisons?.income?.previous) || 0,
+          diff: Number(analysisResult.comparisons?.income?.diff) || 0,
+        },
+        expense: {
+          current: Number(analysisResult.comparisons?.expense?.current) || 0,
+          previous: Number(analysisResult.comparisons?.expense?.previous) || 0,
+          diff: Number(analysisResult.comparisons?.expense?.diff) || 0,
+        },
+      },
+      suggestions: Array.isArray(analysisResult.suggestions)
+        ? analysisResult.suggestions.map((suggestion: any) => ({
+            title: suggestion.title || "改善提案",
+            content: suggestion.content || suggestion.toString(),
+          }))
+        : [
+            {
+              title: "定期的な見直し",
+              content: "支出を定期的に見直すことをお勧めします",
+            },
+          ],
+    };
+
+    return validatedResult;
+  } catch (error) {
+    console.error("AI Analysis Error:", error);
+    // エラー時のフォールバック
+    return {
+      trends: ["データの分析中にエラーが発生しました"],
+      comparisons: {
+        income: {
+          current: promptData.currentMonth.income,
+          previous: promptData.previousMonth.income,
+          diff: 0,
+        },
+        expense: {
+          current: promptData.currentMonth.expense,
+          previous: promptData.previousMonth.expense,
+          diff: 0,
+        },
+      },
+      suggestions: [
+        {
+          title: "一時的なエラー",
+          content:
+            "データ分析に問題が発生しました。しばらく時間をおいて再度お試しください",
+        },
+      ],
+    };
   }
-
-  const result = await response.json();
-  return JSON.parse(result.choices[0].message.content);
 };
 
 export async function POST(req: Request) {
@@ -173,9 +265,13 @@ export async function POST(req: Request) {
     // 結果保存
     const { error } = await supabase.from("AnalysisResult").insert([
       {
+        id: uuidv4(),
         userId,
         insights: aiResponse,
         type: "monthly",
+        analysisDate: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
     ]);
 
