@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { createExpense } from "@/app/actions";
+import { createExpense } from "@/actions/actions";
 import { Card } from "@/components/ui/card";
 
 interface Category {
@@ -75,7 +75,9 @@ export default function ExpenseForm({ categories }: ExpenseFormProps) {
             >
               <PopoverTrigger asChild>
                 <Card className="p-2 cursor-pointer hover:bg-accent shrink-0">
-                  <p className="text-center px-2 text-sm font-semibold">{category.name}</p>
+                  <p className="text-center px-2 text-sm font-semibold">
+                    {category.name}
+                  </p>
                 </Card>
               </PopoverTrigger>
               <PopoverContent className="w-80">

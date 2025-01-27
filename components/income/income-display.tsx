@@ -58,6 +58,16 @@ export function IncomeTable({ incomes, categories }: IncomeTableProps) {
     field: "date",
     direction: "desc",
   });
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  // 選択された月のデータをフィルタリング
+  const filteredIncomes = incomes.filter((income) => {
+    const incomeMonth = income.date.substring(0, 7);
+    return incomeMonth === selectedMonth;
+  });
 
   // ソート処理関数
   const sortIncomes = (incomes: Income[]) => {
@@ -129,7 +139,7 @@ export function IncomeTable({ incomes, categories }: IncomeTableProps) {
 
   // 日付でグループ化
   const groupByDate = () => {
-    return sortIncomes(incomes).reduce(
+    return sortIncomes(filteredIncomes).reduce(
       (acc, income) => {
         const month = new Date(income.date).toLocaleDateString("ja-JP", {
           year: "numeric",
@@ -148,7 +158,7 @@ export function IncomeTable({ incomes, categories }: IncomeTableProps) {
     return categories.reduce(
       (acc, category) => {
         const categoryIncomes = sortIncomes(
-          incomes.filter((income) => income.categoryId === category.id)
+          filteredIncomes.filter((income) => income.categoryId === category.id)
         );
         if (categoryIncomes.length > 0) {
           acc[category.name] = categoryIncomes;
@@ -164,7 +174,7 @@ export function IncomeTable({ incomes, categories }: IncomeTableProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <Button
           variant={viewMode === "date" ? "default" : "outline"}
           size="sm"
@@ -181,6 +191,12 @@ export function IncomeTable({ incomes, categories }: IncomeTableProps) {
           <ListFilter className="h-4 w-4 mr-2" />
           カテゴリ別
         </Button>
+        <input
+          type="month"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
       {Object.entries(groupedIncomes).map(([groupTitle, groupIncomes]) => (

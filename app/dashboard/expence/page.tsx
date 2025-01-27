@@ -1,5 +1,5 @@
 import { getCategories } from "@/actions/category.action";
-import { getRecentExpenses } from "@/app/actions";
+import { getRecentExpenses } from "@/actions/actions";
 import { CategoryManagement } from "@/components/category-management";
 import { PeriodExpenseList } from "@/components/expence/expence-page";
 import ExpenseForm from "@/components/expence/expense-form";

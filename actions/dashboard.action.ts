@@ -4,8 +4,6 @@ import { createClient } from "@/utils/supabase/server";
 import { CategoryBreakdown, MonthlyData } from "@/types/dashboard";
 
 export async function getMonthlyDashboardData(year: number, month: number) {
-  console.log("開始: getMonthlyDashboardData", { year, month });
-
   const supabase = await createClient();
 
   const {
@@ -19,11 +17,6 @@ export async function getMonthlyDashboardData(year: number, month: number) {
   const endDate = new Date(year, month, 0).toISOString();
   const lastStartDate = new Date(year, month - 2, 1).toISOString();
   const lastEndDate = new Date(year, month - 1, 0).toISOString();
-
-  console.log("日付範囲:", {
-    current: { startDate, endDate },
-    last: { lastStartDate, lastEndDate },
-  });
 
   try {
     // 今月の収入データを取得
@@ -122,23 +115,8 @@ export async function getMonthlyDashboardData(year: number, month: number) {
       monthlyTrend,
     };
 
-    console.log("月次データ:", {
-      current: { totalIncome, totalExpense, balance },
-      last: {
-        totalIncome: lastMonthTotalIncome,
-        totalExpense: lastMonthTotalExpense,
-        balance: lastMonthBalance,
-      },
-      diff: {
-        income: totalIncome - lastMonthTotalIncome,
-        expense: totalExpense - lastMonthTotalExpense,
-        balance: balance - lastMonthBalance,
-      },
-    });
-
     return { data: monthlyData };
   } catch (error) {
-    console.error("ダッシュボードデータ取得エラー:", error);
     return { error: "データの取得に失敗しました" };
   }
 }
@@ -207,11 +185,6 @@ async function getMonthlyTrend(userId: string, year: number, month: number) {
   const startDate = new Date(year, month - pastMonths, 1);
   const endDate = new Date(year, month, 0);
 
-  console.log("トレンド期間:", {
-    start: startDate.toISOString(),
-    end: endDate.toISOString(),
-  });
-
   const { data: incomes, error: incomeError } = await supabase
     .from("Income")
     .select("date, amount")
@@ -225,13 +198,6 @@ async function getMonthlyTrend(userId: string, year: number, month: number) {
     .eq("userId", userId)
     .gte("date", startDate.toISOString())
     .lte("date", endDate.toISOString());
-
-  console.log("取得データ:", {
-    incomes: incomes?.length || 0,
-    expenses: expenses?.length || 0,
-    incomeError,
-    expenseError,
-  });
 
   // 月ごとの集計用のマップを初期化
   const monthlyIncomes = new Map();
@@ -287,8 +253,6 @@ async function getMonthlyTrend(userId: string, year: number, month: number) {
       amount,
     })),
   };
-
-  console.log("トレンド計算結果:", result);
 
   return result;
 }

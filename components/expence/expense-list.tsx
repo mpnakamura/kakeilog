@@ -61,6 +61,16 @@ export default function ExpenseList({
     field: "date",
     direction: "desc",
   });
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  // 選択された月のデータをフィルタリング
+  const filteredExpenses = expenses.filter((expense) => {
+    const expenseMonth = expense.date.substring(0, 7);
+    return expenseMonth === selectedMonth;
+  });
 
   // ソート処理関数
   const sortExpenses = (expenses: Expense[]) => {
@@ -142,7 +152,7 @@ export default function ExpenseList({
 
   // グループ化関数
   const groupExpenses = () => {
-    const sortedExpenses = sortExpenses(expenses);
+    const sortedExpenses = sortExpenses(filteredExpenses);
 
     if (viewMode === "date") {
       return sortedExpenses.reduce(
@@ -175,7 +185,7 @@ export default function ExpenseList({
 
   return (
     <div>
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 items-center">
         <Button
           variant={viewMode === "date" ? "default" : "outline"}
           size="sm"
@@ -192,6 +202,12 @@ export default function ExpenseList({
           <ListFilter className="h-4 w-4 mr-2" />
           カテゴリ別
         </Button>
+        <input
+          type="month"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
       <div className="space-y-8">

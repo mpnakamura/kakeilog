@@ -1,12 +1,11 @@
 // app/dashboard/income/page.tsx
 import { getCategories } from "@/actions/category.action";
-import { getMonthlyIncomes } from "@/app/actions";
+import { getMonthlyIncomes } from "@/actions/actions";
 import { CategoryManagement } from "@/components/category-management";
 import { IncomeTable } from "@/components/income/income-display";
 import IncomeForm from "@/components/income/income-form";
 
 export default async function IncomePage() {
-
   const { data: categories, error: categoryError } =
     await getCategories("income");
   const now = new Date();
@@ -14,13 +13,6 @@ export default async function IncomePage() {
     now.getFullYear(),
     now.getMonth() + 1
   );
-
-  console.log("Page Debug Info:", {
-    categoriesCount: categories?.length || 0,
-    incomesCount: incomes?.length || 0,
-    categoryError,
-    incomeError,
-  });
 
   if (categoryError || incomeError) {
     return (

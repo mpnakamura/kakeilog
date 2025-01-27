@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { createIncome } from "@/app/actions";
+import { createIncome } from "@/actions/actions";
 import { Card } from "@/components/ui/card";
 
 interface Category {

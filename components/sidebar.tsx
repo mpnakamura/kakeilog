@@ -23,7 +23,7 @@ export default function Sidebar({ className }: SidebarProps) {
     { href: "/dashboard", label: "ダッシュボード", icon: Home },
     { href: "/dashboard/expence", label: "支出登録", icon: Banknote },
     { href: "/dashboard/income", label: "収入登録", icon: Wallet },
-    { href: "/dashboard/ai", label: "AI", icon: Brain },
+    { href: "/dashboard/analysis", label: "AI分析", icon: Brain },
 
     { href: "/dashboard/settings", label: "設定", icon: Settings },
   ];

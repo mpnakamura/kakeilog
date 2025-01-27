@@ -191,13 +191,6 @@ export async function createIncome(formData: FormData) {
     const rawTitle = formData.get("title");
     const rawCategoryId = formData.get("category");
 
-    console.log("Form data received:", {
-      amount: rawAmount,
-      date: rawDate,
-      title: rawTitle,
-      categoryId: rawCategoryId,
-    });
-
     // バリデーション
     if (!rawTitle || !rawAmount || !rawDate || !rawCategoryId) {
       console.error("Validation failed:", {
@@ -221,12 +214,8 @@ export async function createIncome(formData: FormData) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-
-    console.log("Attempting to insert income:", income);
-
-    // テーブル名が "Income" であることを確認（大文字から始まる）
     const { data, error } = await supabase
-      .from("Income")  // "income" から "Income" に変更
+      .from("Income") 
       .insert([income])
       .select()
       .single();

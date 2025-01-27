@@ -16,6 +16,8 @@ model User {
   incomes       Income[]
   expenses      Expense[]
   subCategories SubCategory[]
+  analysisResults AnalysisResult[]
+  lastProcessedAt DateTime? 
 }
 
 model Category {
@@ -71,4 +73,17 @@ model Expense {
   user          User         @relation(fields: [userId], references: [id])
   category      Category     @relation(fields: [categoryId], references: [id])
   subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
+}
+
+model AnalysisResult {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  analysisDate DateTime @default(now())
+  type        String    // 'monthly' or 'custom'
+  insights    Json      // AI分析結果のJSONデータ
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, analysisDate])
 }

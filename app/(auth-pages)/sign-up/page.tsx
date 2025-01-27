@@ -1,5 +1,5 @@
- // Start of Selection
-import { signUpAction } from "@/app/actions";
+// Start of Selection
+import { signUpAction } from "@/actions/actions";
 import { FormMessage, Message } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";

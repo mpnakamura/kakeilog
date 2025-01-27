@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 import ExpenseList from "@/components/expence/expense-list";
-import { getMonthlyExpenses } from "@/app/actions";
-import PeriodSelector from "@/components/period-select";
+import { getMonthlyExpenses } from "@/actions/actions";
+import PeriodSelector from "../period-select";
 
 interface PeriodExpenseListProps {
   initialExpenses: any[]; // 型は実際の Expense 型に合わせて調整してください
