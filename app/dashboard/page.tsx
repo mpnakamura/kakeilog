@@ -5,21 +5,22 @@ import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import CategoryBreakdown from "@/components/category-breakdown";
 import ExpenseChart from "@/components/expense-chart";
-import MonthPicker from "@/components/month-picker";
 import RecentTransactions from "@/components/recent-transactions";
 import DashboardSkeleton from "@/components/skeleton/dashborad";
 import SummaryCard from "@/components/summary-card";
-import { cn, formatCurrency, getCurrentYearMonth } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { MonthlyData } from "@/types/dashboard";
 import { getMonthlyDashboardData } from "@/actions/dashboard.action";
 import { Wallet, PiggyBank, Calculator, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import YearMonthPicker from "@/components/year-month-picker";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentYearMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
@@ -47,8 +48,10 @@ export default function DashboardPage() {
 
   const fetchMonthlyData = async () => {
     setLoading(true);
-    const [year, month] = selectedMonth.split("-").map(Number);
-    const { data, error } = await getMonthlyDashboardData(year, month);
+    const { data, error } = await getMonthlyDashboardData(
+      selectedYear,
+      selectedMonth
+    );
 
     if (error) {
       toast({
@@ -67,7 +70,7 @@ export default function DashboardPage() {
     if (authChecked) {
       fetchMonthlyData();
     }
-  }, [selectedMonth, authChecked]);
+  }, [selectedYear, selectedMonth, authChecked]);
 
   if (!authChecked) return <DashboardSkeleton />;
 
@@ -76,7 +79,12 @@ export default function DashboardPage() {
       <header className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">家計簿ダッシュボード</h1>
         <div className="flex items-center gap-4">
-          <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+          <YearMonthPicker
+            year={selectedYear}
+            month={selectedMonth}
+            onYearChange={setSelectedYear}
+            onMonthChange={setSelectedMonth}
+          />
           <Button
             variant="outline"
             size="sm"

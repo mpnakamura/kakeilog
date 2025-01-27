@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Lock, Settings, LogOut, Wallet, Banknote } from "lucide-react";
+import {
+  Home,
+  Lock,
+  Settings,
+  LogOut,
+  Wallet,
+  Banknote,
+  Brain,
+} from "lucide-react";
 
 interface SidebarProps {
   className?: string;
@@ -15,8 +23,9 @@ export default function Sidebar({ className }: SidebarProps) {
     { href: "/dashboard", label: "ダッシュボード", icon: Home },
     { href: "/dashboard/expence", label: "支出登録", icon: Banknote },
     { href: "/dashboard/income", label: "収入登録", icon: Wallet },
+    { href: "/dashboard/ai", label: "AI", icon: Brain },
+
     { href: "/dashboard/settings", label: "設定", icon: Settings },
-    { href: "/logout", label: "ログアウト", icon: LogOut },
   ];
 
   return (
