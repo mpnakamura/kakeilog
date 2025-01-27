@@ -67,40 +67,45 @@ export function CategoryManagement({ categories }: CategoryManagementProps) {
           カテゴリー管理
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>カテゴリー管理</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {categories.map((category) => (
-            <div key={category.id} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">{category.name}</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedCategory(category.id)}
-                >
-                  サブカテゴリー追加
-                </Button>
-              </div>
-
-              {category.subCategories.length > 0 && (
-                <div className="pl-4 space-y-1">
-                  {category.subCategories.map((sub) => (
-                    <div key={sub.id} className="text-sm text-muted-foreground">
-                      {sub.name}
-                    </div>
-                  ))}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="space-y-4 p-1">
+            {categories.map((category) => (
+              <div key={category.id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">{category.name}</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedCategory(category.id)}
+                  >
+                    サブカテゴリー追加
+                  </Button>
                 </div>
-              )}
-            </div>
-          ))}
+
+                {category.subCategories.length > 0 && (
+                  <div className="pl-4 space-y-1">
+                    {category.subCategories.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="text-sm text-muted-foreground"
+                      >
+                        {sub.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {selectedCategory && (
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-4 border-t pt-4">
             <Input
               value={newSubCategory}
               onChange={(e) => setNewSubCategory(e.target.value)}
