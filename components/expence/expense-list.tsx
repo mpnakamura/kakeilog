@@ -1,6 +1,5 @@
 "use client";
 
-// ExpenseList.tsx
 import { useState } from "react";
 import {
   Table,
@@ -12,14 +11,36 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import {
   Calendar,
   ListFilter,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExpenseListSkeleton } from "./expence-skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { deleteExpense } from "@/actions/actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { EditExpenseDialog } from "./expence-dialog";
 
 interface Expense {
   id: string;
@@ -62,6 +83,7 @@ export default function ExpenseList({
   onMonthChange,
   loading = false,
 }: ExpenseListProps) {
+  const { toast } = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>("date");
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: "date",
@@ -71,17 +93,9 @@ export default function ExpenseList({
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
   });
-
-  // 月選択時の処理を追加
-  const handleMonthChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newMonth = e.target.value;
-    setSelectedMonth(newMonth);
-    if (onMonthChange) {
-      const [year, month] = newMonth.split("-").map(Number);
-      await onMonthChange(year, month);
-    }
-  };
-
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   // 選択された月のデータをフィルタリング
   const filteredExpenses = expenses.filter((expense) => {
     const expenseMonth = expense.date.substring(0, 7);
@@ -123,6 +137,73 @@ export default function ExpenseList({
           return 0;
       }
     });
+  };
+
+  // 削除処理
+  const handleDelete = async () => {
+    if (!deletingExpense) return;
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteExpense(deletingExpense.id);
+      if (result.error) {
+        toast({
+          variant: "destructive",
+          title: "エラー",
+          description: result.error,
+        });
+      } else {
+        toast({
+          title: "削除完了",
+          description: "支出を削除しました",
+        });
+        // 現在の月のデータを再取得
+        const [year, month] = selectedMonth.split("-").map(Number);
+        await onMonthChange?.(year, month);
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "支出の削除に失敗しました",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeletingExpense(null);
+    }
+  };
+
+  // 編集後の更新処理
+  const handleEditSuccess = async () => {
+    const [year, month] = selectedMonth.split("-").map(Number);
+    await onMonthChange?.(year, month);
+  };
+
+  const handleSelectChange = async (value: string) => {
+    setSelectedMonth(value);
+    if (onMonthChange) {
+      const [year, month] = value.split("-").map(Number);
+      await onMonthChange(year, month);
+    }
+  };
+
+  const generateMonthOptions = () => {
+    const options = [];
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // 1-based
+
+    // 2020年から現在の年までループ
+    for (let year = 2020; year <= currentYear; year++) {
+      const maxMonth = year === currentYear ? currentMonth : 12;
+      for (let month = 1; month <= maxMonth; month++) {
+        const value = `${year}-${String(month).padStart(2, "0")}`;
+        const label = `${year}年${String(month).padStart(2, "0")}月`;
+        options.push({ value, label });
+      }
+    }
+
+    return options;
   };
 
   // ソートの切り替え処理
@@ -199,7 +280,55 @@ export default function ExpenseList({
 
   const groupedExpenses = groupExpenses();
 
-  // 共通のコントロール部分を定義
+  // TableRowコンポーネント
+  const renderTableRow = (expense: Expense) => {
+    const category = categories.find((c) => c.id === expense.categoryId);
+    const subCategory = category?.subCategories.find(
+      (s) => s.id === expense.subCategoryId
+    );
+
+    return (
+      <TableRow key={expense.id}>
+        <TableCell className="font-medium">
+          {new Date(expense.date).toLocaleDateString("ja-JP", {
+            month: "2-digit",
+            day: "2-digit",
+          })}
+        </TableCell>
+        {viewMode === "date" && <TableCell>{category?.name}</TableCell>}
+        <TableCell>{subCategory?.name || "-"}</TableCell>
+        <TableCell>{expense.title}</TableCell>
+        <TableCell className="text-muted-foreground">
+          {expense.memo || "-"}
+        </TableCell>
+        <TableCell className="px-2">
+          ¥{expense.amount.toLocaleString()}
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditingExpense(expense)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDeletingExpense(expense)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  const monthOptions = generateMonthOptions();
+
+  // 共通のコントロール部分
   const controls = (
     <div className="flex gap-2 mb-4 items-center">
       <Button
@@ -218,13 +347,22 @@ export default function ExpenseList({
         <ListFilter className="h-4 w-4 mr-2" />
         カテゴリ別
       </Button>
-      <input
-        type="month"
+      <Select
         value={selectedMonth}
-        onChange={handleMonthChange}
-        className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        onValueChange={handleSelectChange}
         disabled={loading}
-      />
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="月を選択" />
+        </SelectTrigger>
+        <SelectContent>
+          {monthOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 
@@ -238,96 +376,103 @@ export default function ExpenseList({
           この期間の支出データはありません
         </div>
       ) : (
-        <div className="space-y-8">
-          {Object.entries(groupedExpenses).map(
-            ([groupTitle, groupExpenses]) => (
-              <div key={groupTitle} className="bg-white rounded-lg shadow">
-                <div className="p-4 border-b">
-                  <h2 className="text-lg font-semibold">{groupTitle}</h2>
-                </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <SortableTableHead field="date" className="w-24">
-                        日付
-                      </SortableTableHead>
-                      {viewMode === "date" && (
-                        <SortableTableHead field="category" className="w-40">
-                          カテゴリー
+        <>
+          <div className="space-y-8">
+            {Object.entries(groupedExpenses).map(
+              ([groupTitle, groupExpenses]) => (
+                <div key={groupTitle} className="bg-white rounded-lg shadow">
+                  <div className="p-4 border-b">
+                    <h2 className="text-lg font-semibold">{groupTitle}</h2>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <SortableTableHead field="date" className="w-24">
+                          日付
                         </SortableTableHead>
-                      )}
-                      <SortableTableHead
-                        field="subCategory"
-                        className="w-32 whitespace-nowrap"
-                      >
-                        サブカテゴリー
-                      </SortableTableHead>
-                      <SortableTableHead field="title">
-                        タイトル
-                      </SortableTableHead>
-                      <TableHead className="whitespace-nowrap">メモ</TableHead>
-                      <SortableTableHead
-                        field="amount"
-                        className="text-right w-32"
-                      >
-                        金額
-                      </SortableTableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {groupExpenses.map((expense) => {
-                      const category = categories.find(
-                        (c) => c.id === expense.categoryId
-                      );
-                      const subCategory = category?.subCategories.find(
-                        (s) => s.id === expense.subCategoryId
-                      );
+                        {viewMode === "date" && (
+                          <SortableTableHead field="category" className="w-40">
+                            カテゴリー
+                          </SortableTableHead>
+                        )}
+                        <SortableTableHead field="subCategory" className="w-32">
+                          サブカテゴリー
+                        </SortableTableHead>
+                        <SortableTableHead field="title">
+                          タイトル
+                        </SortableTableHead>
+                        <TableHead>メモ</TableHead>
+                        <SortableTableHead
+                          field="amount"
+                          className="text-right w-32"
+                        >
+                          金額
+                        </SortableTableHead>
+                        <TableHead className="text-right w-24">操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {groupExpenses.map((expense) => renderTableRow(expense))}
+                      <TableRow className="bg-muted/50">
+                        <TableCell
+                          colSpan={viewMode === "date" ? 5 : 4}
+                          className="text-right font-medium"
+                        >
+                          {groupTitle}の合計
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          ¥
+                          {groupExpenses
+                            .reduce((sum, e) => sum + e.amount, 0)
+                            .toLocaleString()}
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              )
+            )}
+          </div>
 
-                      return (
-                        <TableRow key={expense.id}>
-                          <TableCell className="font-medium">
-                            {new Date(expense.date).toLocaleDateString(
-                              "ja-JP",
-                              {
-                                month: "2-digit",
-                                day: "2-digit",
-                              }
-                            )}
-                          </TableCell>
-                          {viewMode === "date" && (
-                            <TableCell>{category?.name}</TableCell>
-                          )}
-                          <TableCell>{subCategory?.name || "-"}</TableCell>
-                          <TableCell>{expense.title}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {expense.memo || "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            ¥{expense.amount.toLocaleString()}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    <TableRow className="bg-muted/50">
-                      <TableCell
-                        colSpan={viewMode === "date" ? 5 : 4}
-                        className="text-right font-medium"
-                      >
-                        {groupTitle}の合計
-                      </TableCell>
-                      <TableCell className="text-right font-bold">
-                        ¥
-                        {groupExpenses
-                          .reduce((sum, e) => sum + e.amount, 0)
-                          .toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            )
+          {/* 編集ダイアログ */}
+          {editingExpense && (
+            <EditExpenseDialog
+              expense={editingExpense}
+              categories={categories}
+              isOpen={!!editingExpense}
+              onClose={() => setEditingExpense(null)}
+              onSuccess={handleEditSuccess}
+            />
           )}
-        </div>
+
+          {/* 削除確認ダイアログ */}
+          <AlertDialog
+            open={!!deletingExpense}
+            onOpenChange={(isOpen) => !isOpen && setDeletingExpense(null)}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>支出の削除</AlertDialogTitle>
+                <AlertDialogDescription>
+                  この支出を削除してもよろしいですか？この操作は取り消せません。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>
+                  キャンセル
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? "削除中..." : "削除"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
     </div>
   );

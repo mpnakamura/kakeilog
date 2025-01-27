@@ -7,6 +7,60 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
 
+export const fetchUserData = async () => {
+  const supabase = await createClient();
+
+  // 現在のセッションからユーザーを取得
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { user: null };
+  }
+
+  // `users` テーブルから追加情報を取得
+  const { data: userData, error } = await supabase
+    .from("User") // テーブル名を確認（通常は小文字の複数形）
+    .select("name, image")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching user data:", error);
+    return { user: null, error: error.message };
+  }
+
+  return { user, userData };
+};
+
+export const fetchUserAllData = async () => {
+  const supabase = await createClient();
+
+  // 現在のセッションからユーザーを取得
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { user: null };
+  }
+
+  // `users` テーブルから追加情報を取得
+  const { data: userData, error } = await supabase
+    .from("User") // テーブル名を確認（通常は小文字の複数形）
+    .select("name, email, image")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching user data:", error);
+    return { user: null, error: error.message };
+  }
+
+  return { user, userData };
+};
+
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
@@ -215,28 +269,28 @@ export async function createIncome(formData: FormData) {
       updatedAt: new Date().toISOString(),
     };
     const { data, error } = await supabase
-      .from("Income") 
+      .from("Income")
       .insert([income])
       .select()
       .single();
 
     if (error) {
       console.error("Insert error:", error);
-      
+
       // テーブル存在確認
       const { data: tables } = await supabase
         .from("information_schema.tables")
         .select("table_name")
         .eq("table_schema", "public");
-      
+
       console.log("Available tables:", tables);
-      
+
       return { error: error.message };
     }
 
     console.log("Successfully inserted income:", data);
 
-    revalidatePath("/dashboard/income");  // パスを修正
+    revalidatePath("/dashboard/income"); // パスを修正
     return { data };
   } catch (error) {
     console.error("Unexpected error:", error);
@@ -244,27 +298,6 @@ export async function createIncome(formData: FormData) {
   }
 }
 
-export async function debugTables() {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("Income")
-    .select("count")
-    .single();
-
-  if (error) {
-    console.error("Table check error:", error);
-    // テーブル一覧を取得して確認
-    const { data: tables } = await supabase
-      .from("information_schema.tables")
-      .select("table_name")
-      .eq("table_schema", "public");
-
-    console.log("Available tables:", tables);
-  }
-
-  return { data, error };
-}
 // app/actions.ts
 export async function getRecentExpenses() {
   const supabase = await createClient();
@@ -287,6 +320,104 @@ export async function getRecentExpenses() {
     return { error: error.message };
   }
 
+  return { data };
+}
+
+export async function deleteExpense(expenseId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  // 削除前に該当の支出が現在のユーザーのものか確認
+  const { data: expense, error: fetchError } = await supabase
+    .from("Expense")
+    .select("userId")
+    .eq("id", expenseId)
+    .single();
+
+  if (fetchError) {
+    return { error: "支出データの取得に失敗しました" };
+  }
+
+  if (expense.userId !== user.id) {
+    return { error: "権限がありません" };
+  }
+
+  const { error } = await supabase.from("Expense").delete().eq("id", expenseId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/expense");
+  return { success: true };
+}
+
+export async function updateExpense(expenseId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  // 更新前に該当の支出が現在のユーザーのものか確認
+  const { data: existingExpense, error: fetchError } = await supabase
+    .from("Expense")
+    .select("userId")
+    .eq("id", expenseId)
+    .single();
+
+  if (fetchError || !existingExpense) {
+    return { error: "支出データの取得に失敗しました" };
+  }
+
+  if (existingExpense.userId !== user.id) {
+    return { error: "権限がありません" };
+  }
+
+  // FormDataの値を取得
+  const rawAmount = formData.get("amount");
+  const rawDate = formData.get("date");
+  const rawTitle = formData.get("title");
+  const rawCategoryId = formData.get("category");
+
+  // バリデーション
+  if (!rawTitle || !rawAmount || !rawDate || !rawCategoryId) {
+    return { error: "必須項目が入力されていません" };
+  }
+
+  const updatedExpense = {
+    title: rawTitle as string,
+    amount: parseInt(rawAmount as string),
+    date: new Date(rawDate as string).toISOString(),
+    categoryId: rawCategoryId as string,
+    subCategoryId: (formData.get("subCategory") as string) || null,
+    memo: (formData.get("memo") as string) || null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("Expense")
+    .update(updatedExpense)
+    .eq("id", expenseId)
+    .select()
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/expense");
   return { data };
 }
 
@@ -451,4 +582,102 @@ export async function createExpense(formData: FormData) {
   revalidatePath("/dashboard/expense");
 
   return { data };
+}
+
+export async function updateIncome(incomeId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  // 更新前に該当の収入が現在のユーザーのものか確認
+  const { data: existingIncome, error: fetchError } = await supabase
+    .from("Income")
+    .select("userId")
+    .eq("id", incomeId)
+    .single();
+
+  if (fetchError || !existingIncome) {
+    return { error: "収入データの取得に失敗しました" };
+  }
+
+  if (existingIncome.userId !== user.id) {
+    return { error: "権限がありません" };
+  }
+
+  // FormDataの値を取得
+  const rawAmount = formData.get("amount");
+  const rawDate = formData.get("date");
+  const rawTitle = formData.get("title");
+  const rawCategoryId = formData.get("category");
+
+  // バリデーション
+  if (!rawTitle || !rawAmount || !rawDate || !rawCategoryId) {
+    return { error: "必須項目が入力されていません" };
+  }
+
+  const updatedIncome = {
+    title: rawTitle as string,
+    amount: parseInt(rawAmount as string),
+    date: new Date(rawDate as string).toISOString(),
+    categoryId: rawCategoryId as string,
+    subCategoryId: (formData.get("subCategory") as string) || null,
+    memo: (formData.get("memo") as string) || null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("Income")
+    .update(updatedIncome)
+    .eq("id", incomeId)
+    .select()
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/income");
+  return { data };
+}
+
+export async function deleteIncome(incomeId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  // 削除前に該当の収入が現在のユーザーのものか確認
+  const { data: income, error: fetchError } = await supabase
+    .from("Income")
+    .select("userId")
+    .eq("id", incomeId)
+    .single();
+
+  if (fetchError) {
+    return { error: "収入データの取得に失敗しました" };
+  }
+
+  if (income.userId !== user.id) {
+    return { error: "権限がありません" };
+  }
+
+  const { error } = await supabase.from("Income").delete().eq("id", incomeId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/income");
+  return { success: true };
 }

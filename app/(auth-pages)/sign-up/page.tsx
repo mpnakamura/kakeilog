@@ -5,7 +5,6 @@ import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { SmtpMessage } from "../smtp-message";
 
 export default async function Signup(props: {
   searchParams: Promise<Message>;
@@ -21,7 +20,7 @@ export default async function Signup(props: {
 
   return (
     <>
-      <form className="flex flex-col min-w-64 max-w-64 mx-auto mt-12">
+      <form className="w-full max-w-lg flex flex-col gap-6 mt-12 p-12 shadow-md">
         <h1 className="text-2xl font-medium">アカウント登録</h1>
         <p className="text-sm text text-foreground">
           すでにアカウントをお持ちですか？
@@ -46,7 +45,6 @@ export default async function Signup(props: {
           <FormMessage message={searchParams} />
         </div>
       </form>
-      <SmtpMessage />
     </>
   );
 }

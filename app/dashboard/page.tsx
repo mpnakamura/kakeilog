@@ -6,7 +6,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import CategoryBreakdown from "@/components/category-breakdown";
 import ExpenseChart from "@/components/expense-chart";
 import RecentTransactions from "@/components/recent-transactions";
-import DashboardSkeleton from "@/components/skeleton/dashborad";
+
 import SummaryCard from "@/components/summary-card";
 import { cn, formatCurrency } from "@/lib/utils";
 import { MonthlyData } from "@/types/dashboard";
@@ -15,6 +15,7 @@ import { Wallet, PiggyBank, Calculator, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import YearMonthPicker from "@/components/year-month-picker";
+import DashboardSkeleton from "@/components/skeleton/dashborad";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -72,7 +73,9 @@ export default function DashboardPage() {
     }
   }, [selectedYear, selectedMonth, authChecked]);
 
-  if (!authChecked) return <DashboardSkeleton />;
+  if (!authChecked || loading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="flex-1 w-full flex flex-col max-w-7xl mx-auto p-4 gap-6">
@@ -101,17 +104,7 @@ export default function DashboardPage() {
 
       {loading ? (
         <DashboardSkeleton />
-      ) : !monthlyData ? (
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-          <p className="text-lg text-muted-foreground">
-            データを取得できませんでした
-          </p>
-          <Button onClick={fetchMonthlyData} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            再試行
-          </Button>
-        </div>
-      ) : (
+      ) : monthlyData ? (
         <>
           <div className="grid grid-cols-3 gap-4">
             <SummaryCard
@@ -153,7 +146,7 @@ export default function DashboardPage() {
           </div>
           <ExpenseChart data={monthlyData.monthlyTrend} />
         </>
-      )}
+      ) : null}
     </div>
   );
 }

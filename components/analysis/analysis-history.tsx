@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowUpIcon, ArrowDownIcon, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton"; // Skeletonコンポーネントをインポート
 
 interface AnalysisHistoryItem {
   id: string;
@@ -73,8 +74,52 @@ export default function AnalysisHistory() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-gray-800">
+          <Skeleton className="w-48 h-6" /> {/* タイトルのスケルトン */}
+        </h2>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>
+                <Skeleton className="w-24 h-4" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="w-24 h-4" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="w-24 h-4" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="w-24 h-4" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="w-24 h-4" />
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <Skeleton className="w-32 h-4" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="w-24 h-4" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="w-24 h-4" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="w-40 h-4" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="w-20 h-4" />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     );
   }
@@ -278,14 +323,16 @@ export default function AnalysisHistory() {
                     <div className="bg-gray-50 rounded-lg p-4">
                       <ul className="space-y-3">
                         {Array.isArray(selectedAnalysis.insights?.trends) &&
-                          selectedAnalysis.insights.trends.map((trend, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
-                                {i + 1}
-                              </span>
-                              <span className="text-gray-700">{trend}</span>
-                            </li>
-                          ))}
+                          selectedAnalysis.insights.trends.map(
+                            (trend: any, i: any) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
+                                  {i + 1}
+                                </span>
+                                <span className="text-gray-700">{trend}</span>
+                              </li>
+                            )
+                          )}
                       </ul>
                     </div>
                   </div>
@@ -298,7 +345,7 @@ export default function AnalysisHistory() {
                     <div className="space-y-4">
                       {Array.isArray(selectedAnalysis.insights?.suggestions) &&
                         selectedAnalysis.insights.suggestions.map(
-                          (suggestion: any, i) => (
+                          (suggestion: any, i: any) => (
                             <div
                               key={i}
                               className="bg-green-50 p-4 rounded-lg border border-green-100"

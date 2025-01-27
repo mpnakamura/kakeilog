@@ -49,8 +49,9 @@ export const updateSession = async (request: NextRequest) => {
     const path = request.nextUrl.pathname;
     const isPublicRoute = publicRoutes.some((route) => path.startsWith(route));
 
-    // setupページの制御
+    // 認証状態に基づくリダイレクト制御
     if (user) {
+      // 認証済みユーザーの処理
       const { data: userData } = await supabase
         .from("User")
         .select("name")
@@ -59,6 +60,7 @@ export const updateSession = async (request: NextRequest) => {
 
       const isSetupComplete = !!userData?.name;
 
+      // セットアップ状態のチェック
       if (path === "/auth/setup" && isSetupComplete) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
@@ -66,21 +68,41 @@ export const updateSession = async (request: NextRequest) => {
       if (path === "/dashboard" && !isSetupComplete) {
         return NextResponse.redirect(new URL("/auth/setup", request.url));
       }
-    }
 
-    // 非認証ユーザーはパブリックルート以外にアクセスできない
-    if (!isPublicRoute && !user) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
-    }
+      // 認証済みユーザーがパブリックルートにアクセスした場合はダッシュボードへリダイレクト
+      if (isPublicRoute && path !== "/auth/setup") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
 
-    // 認証済みユーザーがルートにアクセスした場合はダッシュボードへ
-    if (path === "/" && user) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      // ルートパスへのアクセスをダッシュボードへリダイレクト
+      if (path === "/") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    } else {
+      // 非認証ユーザーの処理
+      // パブリックルート以外へのアクセスはサインインページへリダイレクト
+      if (!isPublicRoute) {
+        const signInUrl = new URL("/sign-in", request.url);
+        // 元のURLを?nextパラメータとして保存（オプション）
+        signInUrl.searchParams.set("next", path);
+        return NextResponse.redirect(signInUrl);
+      }
     }
 
     return response;
   } catch (e) {
     console.error(e);
+    // エラー発生時のフォールバック
+    // エラーが発生した場合でも、最低限の保護として非認証状態として扱う
+    const path = request.nextUrl.pathname;
+    const isPublicRoute = ["/sign-in", "/sign-up", "/forgot-password"].some(
+      (route) => path.startsWith(route)
+    );
+
+    if (!isPublicRoute) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+
     return NextResponse.next({
       request: {
         headers: request.headers,
