@@ -1,5 +1,6 @@
 "use client";
 
+// ExpenseList.tsx
 import { useState } from "react";
 import {
   Table,
@@ -18,6 +19,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ExpenseListSkeleton } from "./expence-skeleton";
 
 interface Expense {
   id: string;
@@ -41,6 +43,8 @@ interface Category {
 interface ExpenseListProps {
   expenses: Expense[];
   categories: Category[];
+  onMonthChange?: (year: number, month: number) => Promise<void>;
+  loading?: boolean;
 }
 
 type ViewMode = "date" | "category";
@@ -55,6 +59,8 @@ interface SortConfig {
 export default function ExpenseList({
   expenses,
   categories,
+  onMonthChange,
+  loading = false,
 }: ExpenseListProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("date");
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -65,6 +71,16 @@ export default function ExpenseList({
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
   });
+
+  // 月選択時の処理を追加
+  const handleMonthChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMonth = e.target.value;
+    setSelectedMonth(newMonth);
+    if (onMonthChange) {
+      const [year, month] = newMonth.split("-").map(Number);
+      await onMonthChange(year, month);
+    }
+  };
 
   // 選択された月のデータをフィルタリング
   const filteredExpenses = expenses.filter((expense) => {
@@ -183,113 +199,136 @@ export default function ExpenseList({
 
   const groupedExpenses = groupExpenses();
 
+  // 共通のコントロール部分を定義
+  const controls = (
+    <div className="flex gap-2 mb-4 items-center">
+      <Button
+        variant={viewMode === "date" ? "default" : "outline"}
+        size="sm"
+        onClick={() => setViewMode("date")}
+      >
+        <Calendar className="h-4 w-4 mr-2" />
+        日付順
+      </Button>
+      <Button
+        variant={viewMode === "category" ? "default" : "outline"}
+        size="sm"
+        onClick={() => setViewMode("category")}
+      >
+        <ListFilter className="h-4 w-4 mr-2" />
+        カテゴリ別
+      </Button>
+      <input
+        type="month"
+        value={selectedMonth}
+        onChange={handleMonthChange}
+        className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        disabled={loading}
+      />
+    </div>
+  );
+
   return (
     <div>
-      <div className="flex gap-2 mb-4 items-center">
-        <Button
-          variant={viewMode === "date" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setViewMode("date")}
-        >
-          <Calendar className="h-4 w-4 mr-2" />
-          日付順
-        </Button>
-        <Button
-          variant={viewMode === "category" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setViewMode("category")}
-        >
-          <ListFilter className="h-4 w-4 mr-2" />
-          カテゴリ別
-        </Button>
-        <input
-          type="month"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div className="space-y-8">
-        {Object.entries(groupedExpenses).map(([groupTitle, groupExpenses]) => (
-          <div key={groupTitle} className="bg-white rounded-lg shadow">
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold">{groupTitle}</h2>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableTableHead field="date" className="w-24">
-                    日付
-                  </SortableTableHead>
-                  {viewMode === "date" && (
-                    <SortableTableHead field="category" className="w-40">
-                      カテゴリー
-                    </SortableTableHead>
-                  )}
-                  <SortableTableHead
-                    field="subCategory"
-                    className="w-32 whitespace-nowrap"
-                  >
-                    サブカテゴリー
-                  </SortableTableHead>
-                  <SortableTableHead field="title">タイトル</SortableTableHead>
-                  <TableHead className="whitespace-nowrap">メモ</TableHead>
-                  <SortableTableHead field="amount" className="text-right w-32">
-                    金額
-                  </SortableTableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {groupExpenses.map((expense) => {
-                  const category = categories.find(
-                    (c) => c.id === expense.categoryId
-                  );
-                  const subCategory = category?.subCategories.find(
-                    (s) => s.id === expense.subCategoryId
-                  );
-
-                  return (
-                    <TableRow key={expense.id}>
-                      <TableCell className="font-medium">
-                        {new Date(expense.date).toLocaleDateString("ja-JP", {
-                          month: "2-digit",
-                          day: "2-digit",
-                        })}
-                      </TableCell>
+      {controls}
+      {loading ? (
+        <ExpenseListSkeleton />
+      ) : filteredExpenses.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          この期間の支出データはありません
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {Object.entries(groupedExpenses).map(
+            ([groupTitle, groupExpenses]) => (
+              <div key={groupTitle} className="bg-white rounded-lg shadow">
+                <div className="p-4 border-b">
+                  <h2 className="text-lg font-semibold">{groupTitle}</h2>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SortableTableHead field="date" className="w-24">
+                        日付
+                      </SortableTableHead>
                       {viewMode === "date" && (
-                        <TableCell>{category?.name}</TableCell>
+                        <SortableTableHead field="category" className="w-40">
+                          カテゴリー
+                        </SortableTableHead>
                       )}
-                      <TableCell>{subCategory?.name || "-"}</TableCell>
-                      <TableCell>{expense.title}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {expense.memo || "-"}
+                      <SortableTableHead
+                        field="subCategory"
+                        className="w-32 whitespace-nowrap"
+                      >
+                        サブカテゴリー
+                      </SortableTableHead>
+                      <SortableTableHead field="title">
+                        タイトル
+                      </SortableTableHead>
+                      <TableHead className="whitespace-nowrap">メモ</TableHead>
+                      <SortableTableHead
+                        field="amount"
+                        className="text-right w-32"
+                      >
+                        金額
+                      </SortableTableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {groupExpenses.map((expense) => {
+                      const category = categories.find(
+                        (c) => c.id === expense.categoryId
+                      );
+                      const subCategory = category?.subCategories.find(
+                        (s) => s.id === expense.subCategoryId
+                      );
+
+                      return (
+                        <TableRow key={expense.id}>
+                          <TableCell className="font-medium">
+                            {new Date(expense.date).toLocaleDateString(
+                              "ja-JP",
+                              {
+                                month: "2-digit",
+                                day: "2-digit",
+                              }
+                            )}
+                          </TableCell>
+                          {viewMode === "date" && (
+                            <TableCell>{category?.name}</TableCell>
+                          )}
+                          <TableCell>{subCategory?.name || "-"}</TableCell>
+                          <TableCell>{expense.title}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {expense.memo || "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ¥{expense.amount.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    <TableRow className="bg-muted/50">
+                      <TableCell
+                        colSpan={viewMode === "date" ? 5 : 4}
+                        className="text-right font-medium"
+                      >
+                        {groupTitle}の合計
                       </TableCell>
-                      <TableCell className="text-right">
-                        ¥{expense.amount.toLocaleString()}
+                      <TableCell className="text-right font-bold">
+                        ¥
+                        {groupExpenses
+                          .reduce((sum, e) => sum + e.amount, 0)
+                          .toLocaleString()}
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-                <TableRow className="bg-muted/50">
-                  <TableCell
-                    colSpan={viewMode === "date" ? 5 : 4}
-                    className="text-right font-medium"
-                  >
-                    {groupTitle}の合計
-                  </TableCell>
-                  <TableCell className="text-right font-bold">
-                    ¥
-                    {groupExpenses
-                      .reduce((sum, e) => sum + e.amount, 0)
-                      .toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        ))}
-      </div>
+                  </TableBody>
+                </Table>
+              </div>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }

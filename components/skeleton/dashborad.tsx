@@ -1,36 +1,35 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 export default function DashboardSkeleton() {
   return (
-    <div className="flex-1 w-full flex flex-col gap-6 animate-pulse">
+    <div className="flex-1 w-full flex flex-col gap-6">
       <header className="flex justify-between items-center">
-        <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-        <div className="h-10 bg-gray-200 rounded w-1/4"></div>
+        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-10 w-1/4" />
       </header>
 
       <div className="grid grid-cols-3 gap-4">
         {Array(3)
           .fill(null)
           .map((_, index) => (
-            <div
-              key={index}
-              className="h-24 bg-gray-200 rounded shadow-md"
-            ></div>
+            <Skeleton key={index} className="h-24 shadow-md" />
           ))}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="h-64 bg-gray-200 rounded"></div>
+        <Skeleton className="h-64" />
         <div className="space-y-4">
           {Array(5)
             .fill(null)
             .map((_, index) => (
-              <div key={index} className="h-10 bg-gray-200 rounded"></div>
+              <Skeleton key={index} className="h-10" />
             ))}
         </div>
       </div>
 
-      <div className="h-64 bg-gray-200 rounded"></div>
+      <Skeleton className="h-64" />
     </div>
   );
 }

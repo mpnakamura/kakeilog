@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-
 import ExpenseList from "@/components/expence/expense-list";
 import { getMonthlyExpenses } from "@/actions/actions";
-import PeriodSelector from "../period-select";
+import { Expense } from "@/types/dashboard";
+import { Category } from "@prisma/client";
 
 interface PeriodExpenseListProps {
-  initialExpenses: any[]; // 型は実際の Expense 型に合わせて調整してください
-  categories: any[]; // 型は実際の Category 型に合わせて調整してください
+  initialExpenses: Expense[];
+  categories: any[];
 }
 
 export function PeriodExpenseList({
@@ -20,37 +20,38 @@ export function PeriodExpenseList({
   const [expenses, setExpenses] = useState(initialExpenses);
   const [loading, setLoading] = useState(false);
 
-  const handlePeriodChange = async (year: number, month: number) => {
+  const handleMonthChange = async (year: number, month: number) => {
     setLoading(true);
-    const result = await getMonthlyExpenses(year, month);
-    setLoading(false);
-
-    if (result.error) {
+    try {
+      const result = await getMonthlyExpenses(year, month);
+      if (result.error) {
+        toast({
+          variant: "destructive",
+          title: "エラー",
+          description: result.error,
+        });
+      } else {
+        setExpenses(result.data || []);
+      }
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "エラー",
-        description: result.error,
+        description: "データの取得に失敗しました",
       });
-    } else {
-      setExpenses(result.data || []);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
-      <div className="mb-6">
-        <PeriodSelector onPeriodChange={handlePeriodChange} />
-      </div>
-
-      {loading ? (
-        <div className="text-center py-8">データを読み込み中...</div>
-      ) : expenses.length > 0 ? (
-        <ExpenseList expenses={expenses} categories={categories} />
-      ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          この期間の支出データはありません
-        </div>
-      )}
+      <ExpenseList
+        expenses={expenses}
+        categories={categories}
+        onMonthChange={handleMonthChange}
+        loading={loading}
+      />
     </div>
   );
 }
