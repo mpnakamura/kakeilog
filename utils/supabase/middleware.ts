@@ -3,30 +3,22 @@ import { type NextRequest, NextResponse } from "next/server";
 
 export const updateSession = async (request: NextRequest) => {
   try {
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    // シンプルにResponseを作成
+    let response = NextResponse.next();
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return request.cookies.getAll();
+          get(name: string) {
+            return request.cookies.get(name)?.value;
           },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value)
-            );
-            response = NextResponse.next({
-              request,
-            });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            );
+          set(name: string, value: string, options: any) {
+            response.cookies.set(name, value, options);
+          },
+          remove(name: string, options: any) {
+            response.cookies.set(name, "", options);
           },
         },
       }
@@ -83,7 +75,6 @@ export const updateSession = async (request: NextRequest) => {
       // パブリックルート以外へのアクセスはサインインページへリダイレクト
       if (!isPublicRoute) {
         const signInUrl = new URL("/sign-in", request.url);
-        // 元のURLを?nextパラメータとして保存（オプション）
         signInUrl.searchParams.set("next", path);
         return NextResponse.redirect(signInUrl);
       }
@@ -93,7 +84,6 @@ export const updateSession = async (request: NextRequest) => {
   } catch (e) {
     console.error(e);
     // エラー発生時のフォールバック
-    // エラーが発生した場合でも、最低限の保護として非認証状態として扱う
     const path = request.nextUrl.pathname;
     const isPublicRoute = ["/sign-in", "/sign-up", "/forgot-password"].some(
       (route) => path.startsWith(route)
@@ -103,10 +93,6 @@ export const updateSession = async (request: NextRequest) => {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    return NextResponse.next();
   }
 };

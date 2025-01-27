@@ -25,6 +25,7 @@ import {
   ArrowDown,
   Pencil,
   Trash2,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IncomeTableSkeleton } from "./income-skeleton";
@@ -111,14 +112,14 @@ export function IncomeTable({
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1; // 1-based
 
-    // 2020年から現在の年までループ
-    for (let year = 2020; year <= currentYear; year++) {
-      const maxMonth = year === currentYear ? currentMonth : 12;
-      for (let month = 1; month <= maxMonth; month++) {
-        const value = `${year}-${String(month).padStart(2, "0")}`;
-        const label = `${year}年${String(month).padStart(2, "0")}月`;
-        options.push({ value, label });
-      }
+    // 現在から前後半年間の月をループ
+    for (let offset = -6; offset <= 6; offset++) {
+      const targetDate = new Date(currentYear, currentMonth + offset - 1, 1);
+      const targetYear = targetDate.getFullYear();
+      const targetMonth = targetDate.getMonth() + 1; // 1-based
+      const value = `${targetYear}-${String(targetMonth).padStart(2, "0")}`;
+      const label = `${targetYear}年${String(targetMonth).padStart(2, "0")}月`;
+      options.push({ value, label });
     }
 
     return options;
@@ -363,6 +364,19 @@ export function IncomeTable({
           ))}
         </SelectContent>
       </Select>
+      <div className="flex-1" /> {/* スペーサー */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={async () => {
+          const [year, month] = selectedMonth.split("-").map(Number);
+          await onMonthChange?.(year, month);
+        }}
+        disabled={loading}
+      >
+        <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+        更新
+      </Button>
     </div>
   );
 

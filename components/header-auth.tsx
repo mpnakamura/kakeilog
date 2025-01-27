@@ -34,22 +34,33 @@ export default function AuthButton() {
       });
 
       if (!response.ok) {
+        // 401の場合のみユーザー状態をリセット
         if (response.status === 401) {
           setUser(null);
+          setUserData(null);
         } else {
-          const data = await response.json();
-          setError(data.error || "エラーが発生しました");
+          // その他のエラーの場合は既存の状態を維持
+          console.error("Error response:", response.status);
+          setError("エラーが発生しました");
         }
         setLoading(false);
         return;
       }
 
+      // 正常なレスポンスの処理
       const data = await response.json();
-      setUser(data.user ? { email: data.user.email } : null);
-      setUserData(data.userData || null);
+      if (data.user) {
+        setUser({ email: data.user.email });
+        setUserData(data.userData || null);
+        setError(null); // エラー状態をクリア
+      } else {
+        setUser(null);
+        setUserData(null);
+      }
     } catch (err) {
       console.error("Error fetching user data:", err);
       setError("データ取得中にエラーが発生しました");
+      // エラー時は既存の状態を維持
     } finally {
       setLoading(false);
     }

@@ -276,19 +276,8 @@ export async function createIncome(formData: FormData) {
 
     if (error) {
       console.error("Insert error:", error);
-
-      // テーブル存在確認
-      const { data: tables } = await supabase
-        .from("information_schema.tables")
-        .select("table_name")
-        .eq("table_schema", "public");
-
-      console.log("Available tables:", tables);
-
       return { error: error.message };
     }
-
-    console.log("Successfully inserted income:", data);
 
     revalidatePath("/dashboard/income"); // パスを修正
     return { data };
