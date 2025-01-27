@@ -1,4 +1,5 @@
 "use client";
+
 import { MonthlyTrend } from "@/types/dashboard";
 import {
   ComposedChart,
@@ -25,7 +26,7 @@ export default function ExpenseChart({ data }: ExpenseChartProps) {
   const chartData = data.income.map((income) => {
     const expense = data.expense.find((exp) => exp.month === income.month);
     return {
-      month: income.month.split("-")[1] + "月",
+      month: income.month.replace(/(\d+)年(\d+)月/, "$2月"), // "2024年7月" → "7月"
       収入: income.amount,
       支出: expense?.amount || 0,
       収支差額: income.amount - (expense?.amount || 0),
@@ -39,12 +40,14 @@ export default function ExpenseChart({ data }: ExpenseChartProps) {
       </CardHeader>
       <CardContent>
         <div className="h-[400px]">
-          {" "}
-          {/* 高さを増やす */}
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" tick={{ fontSize: 14 }} />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 14 }}
+                interval={0} // すべてのラベルを表示
+              />
               <YAxis
                 yAxisId="left"
                 tickFormatter={(value) => formatCurrency(value)}

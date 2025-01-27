@@ -25,9 +25,8 @@ export interface Income {
   subCategoryId?: string;
   title: string;
   memo?: string;
-  createdAt: string;    // 追加
-  updatedAt: string;    // 追加
-
+  createdAt: string; // 追加
+  updatedAt: string; // 追加
 }
 
 export interface Expense {
@@ -39,9 +38,8 @@ export interface Expense {
   subCategoryId?: string;
   title: string;
   memo?: string;
-  createdAt: string;    // 追加
-  updatedAt: string;    // 追加
-
+  createdAt: string; // 追加
+  updatedAt: string; // 追加
 }
 
 export interface MonthlyData {
@@ -49,7 +47,9 @@ export interface MonthlyData {
     totalIncome: number;
     totalExpense: number;
     balance: number;
-    lastMonthDiff: number;
+    incomeDiff: number; // 収入の前月比
+    expenseDiff: number; // 支出の前月比
+    balanceDiff: number; // 収支の前月比
     budgetRemaining: number;
   };
   incomes: Income[]; // 収入

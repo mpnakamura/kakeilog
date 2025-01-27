@@ -1,9 +1,8 @@
-
 import { getCategories } from "@/actions/category.action";
 import { getRecentExpenses } from "@/app/actions";
 import { CategoryManagement } from "@/components/category-management";
+import { PeriodExpenseList } from "@/components/expence/expence-page";
 import ExpenseForm from "@/components/expence/expense-form";
-import ExpenseList from "@/components/expence/expense-list";
 
 export default async function ExpensePage() {
   const { data: categories, error: categoryError } =
@@ -20,9 +19,15 @@ export default async function ExpensePage() {
         <h1 className="text-2xl font-bold">支出管理</h1>
         <CategoryManagement categories={categories || []} />
       </div>
+
       <ExpenseForm categories={categories || []} />
 
-      <ExpenseList expenses={expenses || []} categories={categories || []} />
+      <div className="mt-8">
+        <PeriodExpenseList
+          initialExpenses={expenses || []}
+          categories={categories || []}
+        />
+      </div>
     </div>
   );
 }

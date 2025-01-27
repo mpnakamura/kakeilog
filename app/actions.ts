@@ -168,52 +168,114 @@ export const signOutAction = async () => {
 export async function createIncome(formData: FormData) {
   const supabase = await createClient();
 
-  // ユーザー取得
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: "認証されていません" };
+  try {
+    // ユーザー取得とログ
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError) {
+      console.error("Auth error:", authError);
+      return { error: "認証エラーが発生しました" };
+    }
+
+    if (!user) {
+      console.error("No user found");
+      return { error: "認証されていません" };
+    }
+
+    // FormDataの値を取得とログ
+    const rawAmount = formData.get("amount");
+    const rawDate = formData.get("date");
+    const rawTitle = formData.get("title");
+    const rawCategoryId = formData.get("category");
+
+    console.log("Form data received:", {
+      amount: rawAmount,
+      date: rawDate,
+      title: rawTitle,
+      categoryId: rawCategoryId,
+    });
+
+    // バリデーション
+    if (!rawTitle || !rawAmount || !rawDate || !rawCategoryId) {
+      console.error("Validation failed:", {
+        title: !rawTitle,
+        amount: !rawAmount,
+        date: !rawDate,
+        categoryId: !rawCategoryId,
+      });
+      return { error: "必須項目が入力されていません" };
+    }
+
+    const income = {
+      id: uuidv4(),
+      userId: user.id,
+      title: rawTitle as string,
+      amount: parseInt(rawAmount as string),
+      date: new Date(rawDate as string).toISOString(),
+      categoryId: rawCategoryId as string,
+      subCategoryId: (formData.get("subCategory") as string) || null,
+      memo: (formData.get("memo") as string) || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    console.log("Attempting to insert income:", income);
+
+    // テーブル名が "Income" であることを確認（大文字から始まる）
+    const { data, error } = await supabase
+      .from("Income")  // "income" から "Income" に変更
+      .insert([income])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Insert error:", error);
+      
+      // テーブル存在確認
+      const { data: tables } = await supabase
+        .from("information_schema.tables")
+        .select("table_name")
+        .eq("table_schema", "public");
+      
+      console.log("Available tables:", tables);
+      
+      return { error: error.message };
+    }
+
+    console.log("Successfully inserted income:", data);
+
+    revalidatePath("/dashboard/income");  // パスを修正
+    return { data };
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    return { error: "予期せぬエラーが発生しました" };
   }
+}
 
-  // FormDataからの値を型安全に取得
-  const rawAmount = formData.get("amount");
-  const rawDate = formData.get("date");
-  const rawTitle = formData.get("title");
-  const rawCategoryId = formData.get("category");
-
-  // バリデーション
-  if (!rawTitle || !rawAmount || !rawDate || !rawCategoryId) {
-    return { error: "必須項目が入力されていません" };
-  }
-
-  const income = {
-    id: uuidv4(),
-    userId: user.id,
-    title: rawTitle as string,
-    amount: parseInt(rawAmount as string),
-    date: new Date(rawDate as string).toISOString(),
-    categoryId: rawCategoryId as string,
-    subCategoryId: (formData.get("subCategory") as string) || null,
-    memo: (formData.get("memo") as string) || null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+export async function debugTables() {
+  const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("income")
-    .insert([income])
-    .select()
+    .from("Income")
+    .select("count")
     .single();
 
   if (error) {
-    return { error: error.message };
+    console.error("Table check error:", error);
+    // テーブル一覧を取得して確認
+    const { data: tables } = await supabase
+      .from("information_schema.tables")
+      .select("table_name")
+      .eq("table_schema", "public");
+
+    console.log("Available tables:", tables);
   }
 
-  revalidatePath("/protected/income");
-  return { data };
+  return { data, error };
 }
-
 // app/actions.ts
 export async function getRecentExpenses() {
   const supabase = await createClient();
@@ -233,6 +295,103 @@ export async function getRecentExpenses() {
     .limit(50); // 最近の50件を取得
 
   if (error) {
+    return { error: error.message };
+  }
+
+  return { data };
+}
+
+export async function getMonthlyIncomes(year: number, month: number) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  // 指定された年月の開始日と終了日を計算
+  const startDate = new Date(year, month - 1, 1).toISOString();
+  const endDate = new Date(year, month, 0).toISOString();
+
+  const { data, error } = await supabase
+    .from("Income")
+    .select(
+      `
+      *,
+      category:Category(id, name),
+      subCategory:SubCategory(id, name)
+    `
+    )
+    .eq("userId", user.id)
+    .gte("date", startDate)
+    .lte("date", endDate)
+    .order("date", { ascending: false });
+
+  if (error) {
+    console.error("収入データ取得エラー:", error);
+    return { error: error.message };
+  }
+
+  return { data };
+}
+
+// 既存の最近の収入取得関数
+export async function getRecentIncomes() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  const { data, error } = await supabase
+    .from("Income")
+    .select(
+      `
+      *,
+      category:Category(id, name),
+      subCategory:SubCategory(id, name)
+    `
+    )
+    .eq("userId", user.id)
+    .order("date", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { data };
+}
+
+export async function getMonthlyExpenses(year: number, month: number) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  // 指定された年月の開始日と終了日を計算
+  const startDate = new Date(year, month - 1, 1).toISOString();
+  const endDate = new Date(year, month, 0).toISOString();
+
+  const { data, error } = await supabase
+    .from("Expense")
+    .select("*")
+    .eq("userId", user.id)
+    .gte("date", startDate)
+    .lte("date", endDate)
+    .order("date", { ascending: false });
+
+  if (error) {
+    console.error("支出データ取得エラー:", error);
     return { error: error.message };
   }
 

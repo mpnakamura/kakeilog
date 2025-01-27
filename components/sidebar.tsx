@@ -15,11 +15,6 @@ export default function Sidebar({ className }: SidebarProps) {
     { href: "/dashboard", label: "ダッシュボード", icon: Home },
     { href: "/dashboard/expence", label: "支出登録", icon: Banknote },
     { href: "/dashboard/income", label: "収入登録", icon: Wallet },
-    {
-      href: "/dashboard/reset-password",
-      label: "パスワード再設定",
-      icon: Lock,
-    },
     { href: "/dashboard/settings", label: "設定", icon: Settings },
     { href: "/logout", label: "ログアウト", icon: LogOut },
   ];
@@ -28,8 +23,8 @@ export default function Sidebar({ className }: SidebarProps) {
     <aside
       className={`${className} bg-white h-screen border-r border-gray-200`}
     >
-      <div className="flex items-center justify-center h-16 border-b bg-white">
-        <h1 className="text-blue-600 text-xl font-semibold">家計簿</h1>
+      <div className="flex items-center justify-center h-16 border-b border-gray-200 bg-white">
+        <h1 className="text-black text-xl font-semibold">家計簿</h1>
       </div>
       <nav className="mt-10">
         <ul className="space-y-2 px-2">
@@ -40,8 +35,8 @@ export default function Sidebar({ className }: SidebarProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors ${
-                    isActive ? "bg-blue-100 text-blue-600 font-semibold" : ""
+                  className={`flex items-center px-4 py-3 text-black hover:bg-gray-100 rounded-lg transition-colors ${
+                    isActive ? "bg-gray-200 font-semibold" : ""
                   }`}
                   aria-current={isActive ? "page" : undefined}
                 >
