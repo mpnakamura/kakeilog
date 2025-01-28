@@ -31,7 +31,7 @@ export default function SummaryCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className={cn("text-2xl py-2 font-bold", amountClassName)}>
+        <div className={cn("text-2xl py-4 font-bold", amountClassName)}>
           {amount}
         </div>
         {description && (

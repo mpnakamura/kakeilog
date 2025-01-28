@@ -36,7 +36,7 @@ function CategoryPieChart({
 }) {
   return (
     <div className="w-full aspect-[4/3]">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="90%" height="90%">
         <PieChart>
           <Pie
             data={categories}
@@ -84,8 +84,8 @@ function CategoryPieChart({
               return `${value}: ${formatCurrency(item.totalAmount)}`;
             }}
             wrapperStyle={{
-              paddingLeft: "20px",
-              fontSize: "14px",
+              paddingLeft: "8px",
+              fontSize: "12px",
             }}
           />
         </PieChart>

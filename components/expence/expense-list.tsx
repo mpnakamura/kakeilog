@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EditExpenseDialog } from "./expence-dialog";
+import { Switch } from "../ui/switch";
 
 interface Expense {
   id: string;
@@ -51,6 +52,7 @@ interface Expense {
   categoryId: string;
   subCategoryId?: string;
   memo?: string;
+  paid: boolean;
 }
 
 interface Category {
@@ -67,11 +69,13 @@ interface ExpenseListProps {
   categories: Category[];
   onMonthChange?: (year: number, month: number) => Promise<void>;
   loading?: boolean;
+  onPaidStatusChange?: (expenseId: string, paid: boolean) => Promise<void>;
 }
 
 type ViewMode = "date" | "category";
 type SortField = "date" | "category" | "subCategory" | "title" | "amount";
 type SortDirection = "asc" | "desc";
+type PaidFilter = "all" | "paid" | "unpaid";
 
 interface SortConfig {
   field: SortField;
@@ -83,6 +87,7 @@ export default function ExpenseList({
   categories,
   onMonthChange,
   loading = false,
+  onPaidStatusChange,
 }: ExpenseListProps) {
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>("date");
@@ -97,11 +102,24 @@ export default function ExpenseList({
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [paidFilter, setPaidFilter] = useState<PaidFilter>("all");
   // 選択された月のデータをフィルタリング
-  const filteredExpenses = expenses.filter((expense) => {
-    const expenseMonth = expense.date.substring(0, 7);
-    return expenseMonth === selectedMonth;
-  });
+  const filterExpenses = (expenses: Expense[]) => {
+    let filtered = expenses.filter((expense) => {
+      const expenseMonth = expense.date.substring(0, 7);
+      return expenseMonth === selectedMonth;
+    });
+
+    switch (paidFilter) {
+      case "paid":
+        filtered = filtered.filter((expense) => expense.paid);
+        break;
+      case "unpaid":
+        filtered = filtered.filter((expense) => !expense.paid);
+        break;
+    }
+    return filtered;
+  };
 
   // ソート処理関数
   const sortExpenses = (expenses: Expense[]) => {
@@ -250,7 +268,7 @@ export default function ExpenseList({
 
   // グループ化関数
   const groupExpenses = () => {
-    const sortedExpenses = sortExpenses(filteredExpenses);
+    const sortedExpenses = sortExpenses(filterExpenses(expenses));
 
     if (viewMode === "date") {
       return sortedExpenses.reduce(
@@ -288,6 +306,23 @@ export default function ExpenseList({
       (s) => s.id === expense.subCategoryId
     );
 
+    const handlePaidChange = async (checked: boolean) => {
+      try {
+        if (onPaidStatusChange) {
+          await onPaidStatusChange(expense.id, checked);
+          // ステータス更新後にデータを再取得
+          const [year, month] = selectedMonth.split("-").map(Number);
+          await onMonthChange?.(year, month);
+        }
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "エラー",
+          description: "支払い状態の更新に失敗しました",
+        });
+      }
+    };
+
     return (
       <TableRow key={expense.id}>
         <TableCell className="font-medium">
@@ -304,6 +339,13 @@ export default function ExpenseList({
         </TableCell>
         <TableCell className="px-2">
           ¥{expense.amount.toLocaleString()}
+        </TableCell>
+        <TableCell>
+          <Switch
+            checked={expense.paid}
+            onCheckedChange={handlePaidChange}
+            disabled={loading}
+          />
         </TableCell>
         <TableCell className="text-right">
           <div className="flex items-center justify-end space-x-2">
@@ -364,6 +406,19 @@ export default function ExpenseList({
           ))}
         </SelectContent>
       </Select>
+      <Select
+        value={paidFilter}
+        onValueChange={(value: PaidFilter) => setPaidFilter(value)}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="支払い状態" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">すべて</SelectItem>
+          <SelectItem value="paid">支払い済み</SelectItem>
+          <SelectItem value="unpaid">未払い</SelectItem>
+        </SelectContent>
+      </Select>
       <div className="flex-1" /> {/* スペーサー */}
       <Button
         variant="outline"
@@ -385,7 +440,7 @@ export default function ExpenseList({
       {controls}
       {loading ? (
         <ExpenseListSkeleton />
-      ) : filteredExpenses.length === 0 ? (
+      ) : filterExpenses.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           この期間の支出データはありません
         </div>
@@ -422,6 +477,9 @@ export default function ExpenseList({
                         >
                           金額
                         </SortableTableHead>
+                        <TableHead className="w-24 text-center">
+                          支払い
+                        </TableHead>
                         <TableHead className="text-right w-24">操作</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -429,7 +487,7 @@ export default function ExpenseList({
                       {groupExpenses.map((expense) => renderTableRow(expense))}
                       <TableRow className="bg-muted/50">
                         <TableCell
-                          colSpan={viewMode === "date" ? 5 : 4}
+                          colSpan={viewMode === "date" ? 6 : 5}
                           className="text-right font-medium"
                         >
                           {groupTitle}の合計
@@ -440,6 +498,7 @@ export default function ExpenseList({
                             .reduce((sum, e) => sum + e.amount, 0)
                             .toLocaleString()}
                         </TableCell>
+                        <TableCell />
                         <TableCell />
                       </TableRow>
                     </TableBody>

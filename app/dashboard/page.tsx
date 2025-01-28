@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import YearMonthPicker from "@/components/year-month-picker";
 import DashboardSkeleton from "@/components/skeleton/dashborad";
+import { PaymentStatusCard } from "@/components/payment-status";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -137,6 +138,7 @@ export default function DashboardPage() {
               icon={Calculator}
             />
           </div>
+          <PaymentStatusCard expenses={monthlyData.expenses} />
           <div className="grid grid-cols-2 gap-4">
             <CategoryBreakdown data={monthlyData.categoryBreakdown} />
             <RecentTransactions

@@ -256,3 +256,39 @@ async function getMonthlyTrend(userId: string, year: number, month: number) {
 
   return result;
 }
+
+export async function updateExpensePaidStatus(
+  expenseId: string,
+  paid: boolean
+) {
+  try {
+    const supabase = await createClient();
+
+    // ユーザー認証の確認
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { error: "認証されていません" };
+    }
+
+    // 支払い状態の更新
+    const { data, error } = await supabase
+      .from("Expense")
+      .update({ paid })
+      .eq("id", expenseId)
+      .eq("userId", user.id) // セキュリティのため、ユーザーIDも確認
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to update expense paid status:", error);
+      return { error: "支払い状態の更新に失敗しました" };
+    }
+
+    return { data };
+  } catch (error) {
+    console.error("Error in updateExpensePaidStatus:", error);
+    return { error: "支払い状態の更新中にエラーが発生しました" };
+  }
+}

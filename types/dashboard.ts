@@ -38,6 +38,7 @@ export interface Expense {
   subCategoryId?: string;
   title: string;
   memo?: string;
+  paid: boolean;
   createdAt: string; // 追加
   updatedAt: string; // 追加
 }
