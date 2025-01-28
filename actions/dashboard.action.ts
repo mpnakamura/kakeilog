@@ -2,6 +2,8 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { CategoryBreakdown, MonthlyData } from "@/types/dashboard";
+import { revalidatePath } from "next/cache";
+import { v4 as uuidv4 } from "uuid";
 
 export async function getMonthlyDashboardData(year: number, month: number) {
   const supabase = await createClient();
@@ -290,5 +292,128 @@ export async function updateExpensePaidStatus(
   } catch (error) {
     console.error("Error in updateExpensePaidStatus:", error);
     return { error: "支払い状態の更新中にエラーが発生しました" };
+  }
+}
+
+export async function getMonthlyExpensesForBulkRegister(
+  year: number,
+  month: number
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  const startDate = new Date(year, month - 1, 1).toISOString();
+  const endDate = new Date(year, month, 0).toISOString();
+
+  const { data, error } = await supabase
+    .from("Expense")
+    .select(
+      `
+      *,
+      category:Category(id, name),
+      subCategory:SubCategory(id, name)
+    `
+    )
+    .eq("userId", user.id)
+    .gte("date", startDate)
+    .lte("date", endDate)
+    .order("date", { ascending: false });
+
+  if (error) {
+    console.error("支出データ取得エラー:", error);
+    return { error: error.message };
+  }
+
+  return { data };
+}
+
+// dashboard.action.ts に追加
+
+interface BulkExpenseData {
+  originalId: string;
+  newDate: string;
+}
+
+export async function bulkCreateExpenses(
+  expenses: BulkExpenseData[],
+  targetMonth: string
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません" };
+  }
+
+  try {
+    // 元の支出データを取得
+    const { data: originalExpenses, error: fetchError } = await supabase
+      .from("Expense")
+      .select("*")
+      .in(
+        "id",
+        expenses.map((e) => e.originalId)
+      );
+
+    if (fetchError || !originalExpenses) {
+      console.error("元データの取得に失敗:", fetchError);
+      return { error: "元データの取得に失敗しました" };
+    }
+
+    // 新しい支出データを準備
+    const newExpenses = originalExpenses
+      .map((original) => {
+        const expenseData = expenses.find((e) => e.originalId === original.id);
+        if (!expenseData) return null;
+
+        return {
+          id: uuidv4(), // 新しいIDを生成
+          userId: user.id,
+          title: original.title,
+          amount: original.amount,
+          date: expenseData.newDate, // 新しい日付を使用
+          categoryId: original.categoryId,
+          subCategoryId: original.subCategoryId,
+          memo: original.memo,
+          paid: false, // 新規登録時は未払いに設定
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      })
+      .filter(
+        (expense): expense is NonNullable<typeof expense> => expense !== null
+      );
+
+    // バルクインサート
+    const { error: insertError } = await supabase
+      .from("Expense")
+      .insert(newExpenses);
+
+    if (insertError) {
+      console.error("一括登録エラー:", insertError);
+      return { error: "支出の一括登録に失敗しました" };
+    }
+
+    // 関連するパスの再検証
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/expense");
+
+    return {
+      data: {
+        count: newExpenses.length,
+        month: targetMonth,
+      },
+    };
+  } catch (error) {
+    console.error("予期せぬエラー:", error);
+    return { error: "予期せぬエラーが発生しました" };
   }
 }

@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EditExpenseDialog } from "./expence-dialog";
+import { BulkRegisterDialog } from "./bulk/bulk-register-dialog";
 import { Switch } from "../ui/switch";
 
 interface Expense {
@@ -103,6 +104,7 @@ export default function ExpenseList({
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [paidFilter, setPaidFilter] = useState<PaidFilter>("all");
+  const [isBulkRegisterOpen, setIsBulkRegisterOpen] = useState(false);
   // 選択された月のデータをフィルタリング
   const filterExpenses = (expenses: Expense[]) => {
     let filtered = expenses.filter((expense) => {
@@ -432,6 +434,13 @@ export default function ExpenseList({
         <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
         更新
       </Button>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => setIsBulkRegisterOpen(true)}
+      >
+        一括登録
+      </Button>
     </div>
   );
 
@@ -547,6 +556,10 @@ export default function ExpenseList({
           </AlertDialog>
         </>
       )}
+      <BulkRegisterDialog
+        isOpen={isBulkRegisterOpen}
+        onClose={() => setIsBulkRegisterOpen(false)}
+      />
     </div>
   );
 }
