@@ -1,4 +1,4 @@
-# Kakeilog
+# 家計ログ
 
 
 ![ダッシュボード](https://github.com/user-attachments/assets/709f1e13-107a-44ea-a59a-549763792adf)
