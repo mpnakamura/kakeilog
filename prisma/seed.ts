@@ -30,6 +30,8 @@ const DEFAULT_EXPENSE_CATEGORIES = [
   { name: "家具" },
   { name: "交際費" },
   { name: "ペット費" },
+  { name: "クレジットカード" },
+  { name: "借入" },
   { name: "その他" },
 ];
 

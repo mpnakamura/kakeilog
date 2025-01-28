@@ -5,8 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// lib/utils.ts
-
 /**
  * 数値を日本円形式にフォーマットする
  * @param amount 数値
@@ -21,7 +19,6 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-// lib/utils.ts
 
 /**
  * 現在の年月を'YYYY-MM'形式で取得する
@@ -34,7 +31,6 @@ export function getCurrentYearMonth(): string {
   return `${year}-${month}`;
 }
 
-// lib/utils.ts
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
 

@@ -1,4 +1,3 @@
-// app/api/analysis/route.ts
 import { NextResponse } from "next/server";
 import { format, subMonths } from "date-fns";
 import { Expense, Income } from "@/types/dashboard";

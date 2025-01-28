@@ -1,4 +1,3 @@
-// app/api/analysis/check-data/route.ts
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 

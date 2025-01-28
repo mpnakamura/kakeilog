@@ -1,104 +1,105 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# Kakeilog
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+![ダッシュボード](https://github.com/user-attachments/assets/709f1e13-107a-44ea-a59a-549763792adf)
 
-## Features
+- 家計簿アプリケーション。収入と支出を記録・管理し、カテゴリごとの分析や月次レポートを提供します。
+- DeepSeekのAPI連携による直近２ヶ月の分析が可能です。
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Middleware
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+## 特徴
 
-## Demo
+- 収入・支出の登録と管理
+- カテゴリとサブカテゴリによる分類
+- 支出の定期的なコピー機能
+- 月次サマリーと分析
+- AIによる分析
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+## 技術スタック
 
-## Deploy to Vercel
+- [Next.js](https://nextjs.org/) - フレームワーク
+- [TypeScript](https://www.typescriptlang.org/) - 開発言語
+- [Supabase](https://supabase.com/) - バックエンド
+- [Prisma](https://www.prisma.io/) - ORM
+- [shadcn/ui](https://ui.shadcn.com/) - UIコンポーネント
+- [Tailwind CSS](https://tailwindcss.com/) - スタイリング
+- [DeepSeek API](https://chat.deepseek.com/)
 
-Vercel deployment will guide you through creating a Supabase account and project.
+## セットアップ
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+### 必要条件
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+- Node.js 18.x以上
+- npm
+- Supabase アカウント
+- DeepSeek API アカウント
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+### インストール
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+```bash
+# リポジトリのクローン
+git clone https://github.com/yourusername/kakeilog.git
+cd kakeilog
 
-## Clone and run locally
+# 依存関係のインストール
+npm install
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+# 環境変数の設定
+cp .env.example .env.local
+```
 
-2. Create a Next.js app using the Supabase Starter template npx command
+### 環境変数の設定
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+`.env.local`ファイルに以下の環境変数を設定してください：
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+DATABASE_URL=""
 
-3. Use `cd` to change into the app's directory
+DEEPSEEK_API_KEY=
+DEEPSEEK_API_URL=
 
-   ```bash
-   cd with-supabase-app
-   ```
+```
 
-4. Rename `.env.example` to `.env.local` and update the following:
+### データベースのセットアップ
 
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT SUPABASE PROJECT API ANON KEY]
-   ```
+1. Supabaseでプロジェクトを作成
+2. Prismaデータプッシュ
 
-   Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` can be found in [your Supabase project's API settings](https://app.supabase.com/project/_/settings/api)
+```bash
+npx prisma db push
+```
 
-5. You can now run the Next.js local development server:
+3. Prisma seed
 
-   ```bash
-   npm run dev
-   ```
+```bash
+npx prisma db seed
+```
+### 開発サーバーの起動
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+```bash
+npm run dev
+```
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+ブラウザで http://localhost:3000 を開いてアプリケーションにアクセスできます。
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+## デプロイ
 
-## Feedback and issues
+Vercelを使用したデプロイを推奨します：
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+1. Vercelでプロジェクトを作成
+2. 環境変数を設定
+3. デプロイを実行
 
-## More Supabase examples
+## ライセンス
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+[MIT](https://choosealicense.com/licenses/mit/)
+
+## 貢献
+
+IssuesやPull Requestsを歓迎します。大きな変更を加える場合は、まずIssueを作成して変更内容を議論しましょう。
+
+## 作者
+
+- [@mpnakamura](https://github.com/mpnakamura)
