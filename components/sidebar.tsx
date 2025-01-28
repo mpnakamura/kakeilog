@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -24,7 +25,6 @@ export default function Sidebar({ className }: SidebarProps) {
     { href: "/dashboard/expence", label: "支出登録", icon: Banknote },
     { href: "/dashboard/income", label: "収入登録", icon: Wallet },
     { href: "/dashboard/analysis", label: "AI分析", icon: Brain },
-
     { href: "/dashboard/settings", label: "設定", icon: Settings },
   ];
 
@@ -32,8 +32,17 @@ export default function Sidebar({ className }: SidebarProps) {
     <aside
       className={`${className} bg-white h-screen border-r border-gray-200`}
     >
-      <div className="flex items-center justify-center h-16 border-b border-gray-200 bg-white">
-        <h1 className="text-black text-xl font-semibold">家計簿</h1>
+      <div className="flex items-center justify-center h-20  bg-white">
+        <Link href="/dashboard">
+          <Image
+            src="/img/logo.png"
+            alt="Logo"
+            width={200}
+            height={60}
+            className="object-contain"
+            priority
+          />
+        </Link>
       </div>
       <nav className="mt-10">
         <ul className="space-y-2 px-2">
